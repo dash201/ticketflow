@@ -1,0 +1,52 @@
+# ===== Secrets & configuration locale =====
+.env
+*.env
+!.env.example
+*.key
+*.pem
+
+# ===== Python / Django =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.Python
+venv/
+.venv/
+env/
+db.sqlite3
+db.sqlite3-journal
+/staticfiles/
+/media/
+*.log
+
+# ===== Base de données / sauvegardes =====
+*.dump
+*.sql.gz
+/backups/
+
+# ===== Node / React (front web) =====
+node_modules/
+dist/
+build/
+.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===== Android (app mobile) =====
+*.apk
+*.aab
+*.iml
+.gradle/
+/local.properties
+/.idea/
+/android/app/build/
+/android/build/
+*.keystore
+*.jks
+
+# ===== Éditeurs / OS =====
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
