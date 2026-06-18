@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TicketFlow — MCD / MLD</title>
+<style>
+:root {
+  --bg:#0a0e14; --bg2:#131820; --bg3:#1a2030; --border:#2a3545;
+  --text:#d4dce8; --muted:#6b7a8d; --accent:#4fc3f7; --green:#66bb6a;
+  --warn:#ffa726; --danger:#ef5350; --purple:#ab7df6; --cyan:#26c6da;
+  --gold:#ffd54f; --pink:#f06292;
+  --mono:'Fira Code','Cascadia Code','JetBrains Mono',monospace;
+  --sans:'Inter','Segoe UI',system-ui,sans-serif; --r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.8}
+
+#sidebar{position:fixed;top:0;left:0;width:280px;height:100vh;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:1.2rem 0;z-index:100;scrollbar-width:thin}
+#sidebar .logo{padding:0 1.2rem 1.2rem;border-bottom:1px solid var(--border);margin-bottom:.8rem}
+#sidebar .logo h2{font-size:.9rem;color:var(--purple);font-weight:700}
+#sidebar .logo p{font-size:.7rem;color:var(--muted);margin-top:.2rem}
+#sidebar .logo a{font-size:.72rem;color:var(--accent);text-decoration:none;display:block;margin-top:.5rem}
+#sidebar .logo a:hover{text-decoration:underline}
+#sidebar nav a{display:block;padding:.4rem 1.2rem;color:var(--muted);text-decoration:none;font-size:.78rem;border-left:3px solid transparent;transition:.15s}
+#sidebar nav a:hover,#sidebar nav a.active{background:var(--bg3);color:var(--text);border-left-color:var(--purple)}
+#sidebar nav .ns{padding:.7rem 1.2rem .2rem;font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);opacity:.55}
+
+#main{margin-left:280px;padding:3rem 3.5rem;max-width:960px}
+section{margin-bottom:4rem;scroll-margin-top:2rem}
+
+h1{font-size:2.2rem;font-weight:800;background:linear-gradient(135deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.2;margin-bottom:.5rem}
+h2{font-size:1.45rem;font-weight:700;margin-bottom:1rem;padding-bottom:.5rem;border-bottom:2px solid var(--border);color:var(--text)}
+h3{font-size:1.05rem;font-weight:600;color:var(--accent);margin:1.6rem 0 .6rem}
+h4{font-size:.92rem;font-weight:600;color:var(--purple);margin:1.1rem 0 .35rem}
+p{margin-bottom:.8rem}
+
+code{font-family:var(--mono);font-size:.83em;background:rgba(79,195,247,.1);color:var(--accent);padding:.1em .35em;border-radius:4px}
+
+.box{display:flex;gap:.9rem;padding:1rem 1.2rem;border-radius:var(--r);margin:1.2rem 0;border-left:4px solid;font-size:.88rem}
+.box .ic{font-size:1.05rem;flex-shrink:0;margin-top:.1rem}
+.box.info{background:rgba(79,195,247,.06);border-color:var(--accent)}
+.box.warn{background:rgba(255,167,38,.07);border-color:var(--warn)}
+.box.brain{background:rgba(171,125,246,.07);border-color:var(--purple)}
+.box b{display:block;margin-bottom:.2rem}
+
+table{width:100%;border-collapse:collapse;font-size:.83rem;margin:.8rem 0 1.2rem}
+th{background:var(--bg3);color:var(--muted);font-weight:600;text-align:left;padding:.55rem .9rem;border-bottom:2px solid var(--border);font-size:.72rem;letter-spacing:.05em;text-transform:uppercase}
+td{padding:.5rem .9rem;border-bottom:1px solid var(--border);vertical-align:top}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin:.8rem 0}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem}
+.card h4{margin-top:0}
+
+.hero{padding:1.5rem 0 2.5rem;border-bottom:1px solid var(--border);margin-bottom:3rem}
+.hero .sub{font-size:1rem;color:var(--muted);margin-top:.4rem;max-width:600px}
+
+/* UML Diagram styles */
+.uml-diagram{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;margin:1.2rem 0;overflow-x:auto}
+.uml-diagram svg{display:block;margin:0 auto}
+.uml-title{text-align:center;font-size:.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem}
+
+/* Entity styles for MLD */
+.entity{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.8rem 1rem;margin:.6rem 0;font-size:.82rem}
+.entity-name{color:var(--accent);font-weight:700;font-size:.88rem;border-bottom:1px solid var(--border);padding-bottom:.4rem;margin-bottom:.4rem}
+.entity-pk{color:var(--gold);font-weight:600}
+.entity-fk{color:var(--pink)}
+.entity-attr{color:var(--text)}
+.entity-type{color:var(--muted);font-family:var(--mono);font-size:.75rem}
+
+/* Responsive */
+@media(max-width:768px){
+  #sidebar{display:none}
+  #main{margin-left:0;padding:1.5rem 1.2rem}
+  .grid2{grid-template-columns:1fr}
+  h1{font-size:1.6rem}
+}
+
+/* Print A4 */
+@media print{
+  @page{size:A4;margin:18mm 15mm}
+  #sidebar{display:none}
+  #main{margin-left:0;padding:0;max-width:100%}
+  body{background:#fff;color:#1a1a1a;font-size:11pt}
+  .box{break-inside:avoid;border:1px solid #ccc}
+  h2{break-after:avoid;border-color:#999}
+  section{break-inside:avoid}
+  .uml-diagram{break-inside:avoid}
+  table{page-break-inside:avoid}
+  th{background:#eee;color:#333;border-color:#999}
+  td{border-color:#ccc}
+  .entity{background:#f5f5f5;border-color:#ccc}
+  .card{border-color:#ccc;background:#fafafa}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ SIDEBAR ============ -->
+<div id="sidebar">
+  <div class="logo">
+    <h2>TicketFlow</h2>
+    <p>MCD / MLD</p>
+    <a href="ticketflow-cdc.html">&rarr; Cahier des Charges</a>
+    <a href="ticketflow-uml.html">&rarr; Analyse UML</a>
+    <a href="index.html">&larr; Retour au cours Django</a>
+  </div>
+  <nav>
+    <div class="ns">Modèle de données</div>
+    <a href="#mcd">1. MCD</a>
+    <a href="#regles">2. Règles de gestion</a>
+    <a href="#mld">3. MLD</a>
+    <a href="#dict">4. Dictionnaire de données</a>
+    <a href="#contraintes">5. Contraintes d'intégrité</a>
+  </nav>
+</div>
+
+<!-- ============ MAIN ============ -->
+<div id="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>TicketFlow — MCD / MLD</h1>
+  <p class="sub">Modèle Conceptuel de Données, Modèle Logique de Données et dictionnaire de données pour le système de support client multi-tenant.</p>
+  <p style="font-size:.78rem;color:var(--muted);margin-top:.6rem">Voir aussi : <a href="ticketflow-cdc.html" style="color:var(--accent)">Cahier des Charges</a> · <a href="ticketflow-uml.html" style="color:var(--accent)">Analyse UML</a></p>
+</div>
+
+<!-- ===== S1 : MCD ===== -->
+<section id="mcd">
+<h2>1. Modèle Conceptuel de Données (MCD)</h2>
+
+<div class="uml-diagram">
+<div class="uml-title">MCD — Entités et associations</div>
+<svg viewBox="0 0 850 500" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:850px">
+
+  <!-- Entity: USER -->
+  <rect x="30" y="50" width="160" height="60" rx="6" fill="rgba(79,195,247,.1)" stroke="#4fc3f7" stroke-width="2"/>
+  <text x="110" y="85" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="14" font-weight="700">USER</text>
+  <text x="110" y="100" text-anchor="middle" fill="#6b7a8d" font-family="Fira Code,monospace" font-size="9">email, first_name, last_name</text>
+
+  <!-- Entity: ORGANIZATION -->
+  <rect x="360" y="50" width="170" height="60" rx="6" fill="rgba(102,187,106,.1)" stroke="#66bb6a" stroke-width="2"/>
+  <text x="445" y="85" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="14" font-weight="700">ORGANIZATION</text>
+  <text x="445" y="100" text-anchor="middle" fill="#6b7a8d" font-family="Fira Code,monospace" font-size="9">name, slug, auto_assign</text>
+
+  <!-- Association: MEMBERSHIP -->
+  <polygon points="245,80 305,50 365,80 305,110" fill="rgba(171,125,246,.08)" stroke="#ab7df6" stroke-width="2"/>
+  <text x="305" y="85" text-anchor="middle" fill="#ab7df6" font-family="Inter,sans-serif" font-size="11" font-weight="600">MEMBER</text>
+
+  <line x1="190" y1="80" x2="245" y2="80" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="210" y="72" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">1,N</text>
+  <line x1="365" y1="80" x2="360" y2="80" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="380" y="72" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">1,N</text>
+
+  <!-- Entity: TICKET -->
+  <rect x="340" y="210" width="180" height="70" rx="6" fill="rgba(255,167,38,.1)" stroke="#ffa726" stroke-width="2"/>
+  <text x="430" y="240" text-anchor="middle" fill="#ffa726" font-family="Inter,sans-serif" font-size="14" font-weight="700">TICKET</text>
+  <text x="430" y="258" text-anchor="middle" fill="#6b7a8d" font-family="Fira Code,monospace" font-size="9">number, subject, description,</text>
+  <text x="430" y="270" text-anchor="middle" fill="#6b7a8d" font-family="Fira Code,monospace" font-size="9">status, priority</text>
+
+  <!-- Association: POSSEDE (Org → Ticket) -->
+  <polygon points="445,130 480,110 515,130 480,150" fill="rgba(102,187,106,.06)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="480" y="135" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="9">POSSEDE</text>
+  <line x1="445" y1="110" x2="445" y2="105" stroke="#66bb6a" stroke-width="1.5"/>
+  <line x1="480" y1="150" x2="430" y2="210" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="500" y="105" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">1,1</text>
+  <text x="450" y="200" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">0,N</text>
+
+  <!-- Association: CREE (User → Ticket) -->
+  <polygon points="170,200 210,175 250,200 210,225" fill="rgba(79,195,247,.06)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="210" y="205" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="9">CREE</text>
+  <line x1="110" y1="110" x2="170" y2="200" stroke="#4fc3f7" stroke-width="1.5"/>
+  <line x1="250" y1="200" x2="340" y2="240" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="130" y="155" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">1,1</text>
+  <text x="290" y="215" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">0,N</text>
+
+  <!-- Association: ASSIGNE (User → Ticket) -->
+  <polygon points="620,160 660,140 700,160 660,180" fill="rgba(255,213,79,.06)" stroke="#ffd54f" stroke-width="1.5"/>
+  <text x="660" y="165" text-anchor="middle" fill="#ffd54f" font-family="Inter,sans-serif" font-size="9">ASSIGNE</text>
+  <path d="M 190 80 Q 700 30 700 160" fill="none" stroke="#ffd54f" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="660" y1="180" x2="520" y2="230" stroke="#ffd54f" stroke-width="1.5"/>
+  <text x="730" y="105" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">0,1</text>
+  <text x="580" y="215" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">0,N</text>
+
+  <!-- Entity: COMMENT -->
+  <rect x="50" y="370" width="160" height="60" rx="6" fill="rgba(38,198,218,.1)" stroke="#26c6da" stroke-width="2"/>
+  <text x="130" y="400" text-anchor="middle" fill="#26c6da" font-family="Inter,sans-serif" font-size="14" font-weight="700">COMMENT</text>
+  <text x="130" y="420" text-anchor="middle" fill="#6b7a8d" font-family="Fira Code,monospace" font-size="9">body, is_internal</text>
+
+  <!-- Association: CONTIENT (Ticket → Comment) -->
+  <polygon points="260,330 300,310 340,330 300,350" fill="rgba(38,198,218,.06)" stroke="#26c6da" stroke-width="1.5"/>
+  <text x="300" y="335" text-anchor="middle" fill="#26c6da" font-family="Inter,sans-serif" font-size="9">CONTIENT</text>
+  <line x1="380" y1="280" x2="340" y2="330" stroke="#26c6da" stroke-width="1.5"/>
+  <line x1="260" y1="330" x2="210" y2="390" stroke="#26c6da" stroke-width="1.5"/>
+  <text x="365" y="310" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">1,1</text>
+  <text x="230" y="370" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">0,N</text>
+
+  <!-- Entity: TICKET_HISTORY -->
+  <rect x="560" y="370" width="180" height="60" rx="6" fill="rgba(240,98,146,.1)" stroke="#f06292" stroke-width="2"/>
+  <text x="650" y="400" text-anchor="middle" fill="#f06292" font-family="Inter,sans-serif" font-size="14" font-weight="700">HISTORIQUE</text>
+  <text x="650" y="420" text-anchor="middle" fill="#6b7a8d" font-family="Fira Code,monospace" font-size="9">field, old_value, new_value</text>
+
+  <!-- Association: TRACE (Ticket → History) -->
+  <polygon points="520,330 560,310 600,330 560,350" fill="rgba(240,98,146,.06)" stroke="#f06292" stroke-width="1.5"/>
+  <text x="560" y="335" text-anchor="middle" fill="#f06292" font-family="Inter,sans-serif" font-size="9">TRACE</text>
+  <line x1="480" y1="280" x2="520" y2="330" stroke="#f06292" stroke-width="1.5"/>
+  <line x1="600" y1="340" x2="620" y2="370" stroke="#f06292" stroke-width="1.5"/>
+  <text x="490" y="310" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">1,1</text>
+  <text x="605" y="365" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">0,N</text>
+
+</svg>
+</div>
+</section>
+
+<!-- ===== S2 : RÈGLES DE GESTION ===== -->
+<section id="regles">
+<h2>2. Règles de gestion</h2>
+
+<div class="grid2">
+  <div class="card">
+    <h4>RG-1 : Membership</h4>
+    <p style="font-size:.82rem">Un USER peut appartenir à plusieurs ORGANISATIONs via un MEMBERSHIP. Un MEMBERSHIP porte un rôle (ADMIN, AGENT, CLIENT). La combinaison (user, organization) est unique.</p>
+  </div>
+  <div class="card">
+    <h4>RG-2 : Ticket</h4>
+    <p style="font-size:.82rem">Un TICKET est toujours rattaché à exactement une ORGANISATION et un USER créateur. L'assignation à un agent est optionnelle (0,1).</p>
+  </div>
+  <div class="card">
+    <h4>RG-3 : Comment</h4>
+    <p style="font-size:.82rem">Un COMMENT appartient à exactement un TICKET. Le booléen <code>is_internal</code> détermine la visibilité (agents seulement vs. tous).</p>
+  </div>
+  <div class="card">
+    <h4>RG-4 : Historique</h4>
+    <p style="font-size:.82rem">Chaque changement de champ important (status, priority, assigned_to) sur un TICKET génère une entrée HISTORIQUE avec les valeurs avant/après.</p>
+  </div>
+  <div class="card">
+    <h4>RG-5 : Numérotation</h4>
+    <p style="font-size:.82rem">Le numéro de TICKET est séquentiel par ORGANISATION (pas global). Deux orgas peuvent avoir chacune un ticket TF-001.</p>
+  </div>
+  <div class="card">
+    <h4>RG-6 : Soft delete</h4>
+    <p style="font-size:.82rem">La suppression est toujours logique (soft delete via <code>is_deleted</code>). Aucune donnée n'est physiquement supprimée de la base.</p>
+  </div>
+</div>
+</section>
+
+<!-- ===== S3 : MLD ===== -->
+<section id="mld">
+<h2>3. Modèle Logique de Données (MLD)</h2>
+
+<p>Passage du MCD au MLD : chaque entité devient une table, chaque association N:M devient une table intermédiaire, les clés étrangères matérialisent les associations 1:N.</p>
+
+<div class="entity">
+  <div class="entity-name">users_user</div>
+  <p style="margin:.2rem 0;font-size:.8rem">
+    <span class="entity-pk">id</span> <span class="entity-type">UUID PK</span> |
+    <span class="entity-attr">email</span> <span class="entity-type">VARCHAR(254) UNIQUE NOT NULL</span> |
+    <span class="entity-attr">password</span> <span class="entity-type">VARCHAR(128) NOT NULL</span> |
+    <span class="entity-attr">first_name</span> <span class="entity-type">VARCHAR(150)</span> |
+    <span class="entity-attr">last_name</span> <span class="entity-type">VARCHAR(150)</span> |
+    <span class="entity-attr">is_active</span> <span class="entity-type">BOOLEAN DEFAULT TRUE</span> |
+    <span class="entity-attr">is_staff</span> <span class="entity-type">BOOLEAN DEFAULT FALSE</span> |
+    <span class="entity-attr">date_joined</span> <span class="entity-type">TIMESTAMPTZ NOT NULL</span>
+  </p>
+</div>
+
+<div class="entity">
+  <div class="entity-name">organizations_organization</div>
+  <p style="margin:.2rem 0;font-size:.8rem">
+    <span class="entity-pk">id</span> <span class="entity-type">UUID PK</span> |
+    <span class="entity-attr">name</span> <span class="entity-type">VARCHAR(100) NOT NULL</span> |
+    <span class="entity-attr">slug</span> <span class="entity-type">VARCHAR(100) UNIQUE NOT NULL</span> |
+    <span class="entity-fk">owner_id</span> <span class="entity-type">UUID FK → users_user(id) NOT NULL</span> |
+    <span class="entity-attr">auto_assign</span> <span class="entity-type">BOOLEAN DEFAULT FALSE</span> |
+    <span class="entity-attr">created_at</span> <span class="entity-type">TIMESTAMPTZ NOT NULL</span> |
+    <span class="entity-attr">updated_at</span> <span class="entity-type">TIMESTAMPTZ NOT NULL</span>
+  </p>
+</div>
+
+<div class="entity">
+  <div class="entity-name">organizations_membership</div>
+  <p style="margin:.2rem 0;font-size:.8rem">
+    <span class="entity-pk">id</span> <span class="entity-type">UUID PK</span> |
+    <span class="entity-fk">user_id</span> <span class="entity-type">UUID FK → users_user(id) NOT NULL</span> |
+    <span class="entity-fk">organization_id</span> <span class="entity-type">UUID FK → organizations_organization(id) NOT NULL</span> |
+    <span class="entity-attr">role</span> <span class="entity-type">VARCHAR(10) CHECK(IN 'ADMIN','AGENT','CLIENT') NOT NULL</span> |
+    <span class="entity-attr">joined_at</span> <span class="entity-type">TIMESTAMPTZ NOT NULL</span>
+  </p>
+  <p style="font-size:.75rem;color:var(--purple);margin-top:.3rem">UNIQUE(user_id, organization_id) | INDEX(organization_id, role)</p>
+</div>
+
+<div class="entity">
+  <div class="entity-name">tickets_ticket</div>
+  <p style="margin:.2rem 0;font-size:.8rem">
+    <span class="entity-pk">id</span> <span class="entity-type">UUID PK</span> |
+    <span class="entity-fk">organization_id</span> <span class="entity-type">UUID FK → organizations_organization(id) NOT NULL</span> |
+    <span class="entity-attr">number</span> <span class="entity-type">INTEGER NOT NULL</span> |
+    <span class="entity-attr">subject</span> <span class="entity-type">VARCHAR(255) NOT NULL</span> |
+    <span class="entity-attr">description</span> <span class="entity-type">TEXT NOT NULL</span> |
+    <span class="entity-attr">status</span> <span class="entity-type">VARCHAR(10) CHECK(IN 'NEW','OPEN','PENDING','RESOLVED','CLOSED') DEFAULT 'NEW'</span> |
+    <span class="entity-attr">priority</span> <span class="entity-type">VARCHAR(10) CHECK(IN 'LOW','MEDIUM','HIGH','URGENT') DEFAULT 'MEDIUM'</span> |
+    <span class="entity-fk">created_by_id</span> <span class="entity-type">UUID FK → users_user(id) NOT NULL</span> |
+    <span class="entity-fk">assigned_to_id</span> <span class="entity-type">UUID FK → users_user(id) NULL</span> |
+    <span class="entity-attr">created_at</span> <span class="entity-type">TIMESTAMPTZ NOT NULL</span> |
+    <span class="entity-attr">updated_at</span> <span class="entity-type">TIMESTAMPTZ NOT NULL</span> |
+    <span class="entity-attr">is_deleted</span> <span class="entity-type">BOOLEAN DEFAULT FALSE</span>
+  </p>
+  <p style="font-size:.75rem;color:var(--purple);margin-top:.3rem">UNIQUE(organization_id, number) | INDEX(organization_id, status) | INDEX(organization_id, priority) | INDEX(assigned_to_id) | INDEX(created_at DESC)</p>
+</div>
+
+<div class="entity">
+  <div class="entity-name">tickets_comment</div>
+  <p style="margin:.2rem 0;font-size:.8rem">
+    <span class="entity-pk">id</span> <span class="entity-type">UUID PK</span> |
+    <span class="entity-fk">ticket_id</span> <span class="entity-type">UUID FK → tickets_ticket(id) NOT NULL</span> |
+    <span class="entity-fk">author_id</span> <span class="entity-type">UUID FK → users_user(id) NOT NULL</span> |
+    <span class="entity-attr">body</span> <span class="entity-type">TEXT NOT NULL</span> |
+    <span class="entity-attr">is_internal</span> <span class="entity-type">BOOLEAN DEFAULT FALSE</span> |
+    <span class="entity-attr">created_at</span> <span class="entity-type">TIMESTAMPTZ NOT NULL</span> |
+    <span class="entity-attr">updated_at</span> <span class="entity-type">TIMESTAMPTZ NOT NULL</span> |
+    <span class="entity-attr">is_deleted</span> <span class="entity-type">BOOLEAN DEFAULT FALSE</span>
+  </p>
+  <p style="font-size:.75rem;color:var(--purple);margin-top:.3rem">INDEX(ticket_id, created_at) | INDEX(author_id)</p>
+</div>
+
+<div class="entity">
+  <div class="entity-name">tickets_tickethistory</div>
+  <p style="margin:.2rem 0;font-size:.8rem">
+    <span class="entity-pk">id</span> <span class="entity-type">UUID PK</span> |
+    <span class="entity-fk">ticket_id</span> <span class="entity-type">UUID FK → tickets_ticket(id) NOT NULL</span> |
+    <span class="entity-fk">changed_by_id</span> <span class="entity-type">UUID FK → users_user(id) NOT NULL</span> |
+    <span class="entity-attr">field</span> <span class="entity-type">VARCHAR(50) NOT NULL</span> |
+    <span class="entity-attr">old_value</span> <span class="entity-type">VARCHAR(255) NULL</span> |
+    <span class="entity-attr">new_value</span> <span class="entity-type">VARCHAR(255) NOT NULL</span> |
+    <span class="entity-attr">created_at</span> <span class="entity-type">TIMESTAMPTZ NOT NULL</span>
+  </p>
+  <p style="font-size:.75rem;color:var(--purple);margin-top:.3rem">INDEX(ticket_id, created_at)</p>
+</div>
+</section>
+
+<!-- ===== S4 : DICTIONNAIRE DE DONNÉES ===== -->
+<section id="dict">
+<h2>4. Dictionnaire de données</h2>
+
+<h3>4.1 — Énumérations</h3>
+<table>
+  <tr><th>Enum</th><th>Valeurs</th><th>Description</th></tr>
+  <tr><td><code>Role</code></td><td>ADMIN, AGENT, CLIENT</td><td>Rôle d'un utilisateur au sein d'une organisation</td></tr>
+  <tr><td><code>TicketStatus</code></td><td>NEW, OPEN, PENDING, RESOLVED, CLOSED</td><td>Statut courant d'un ticket (machine à états — voir <a href="ticketflow-uml.html#uml-etats" style="color:var(--accent)">diagramme d'états</a>)</td></tr>
+  <tr><td><code>TicketPriority</code></td><td>LOW, MEDIUM, HIGH, URGENT</td><td>Niveau d'urgence d'un ticket</td></tr>
+</table>
+
+<h3>4.2 — Champs communs</h3>
+<table>
+  <tr><th>Champ</th><th>Type</th><th>Présent dans</th><th>Description</th></tr>
+  <tr><td><code>id</code></td><td>UUID v4</td><td>Toutes les tables</td><td>Clé primaire. UUID plutôt qu'auto-increment pour éviter l'exposition d'information (on ne peut pas deviner le prochain ID).</td></tr>
+  <tr><td><code>created_at</code></td><td>DateTimeField (auto_now_add)</td><td>Toutes sauf User</td><td>Date de création. Automatique, non modifiable.</td></tr>
+  <tr><td><code>updated_at</code></td><td>DateTimeField (auto_now)</td><td>Organization, Ticket, Comment</td><td>Dernière modification. Automatique.</td></tr>
+  <tr><td><code>is_deleted</code></td><td>BooleanField (default=False)</td><td>Ticket, Comment</td><td>Soft delete. Les QuerySets par défaut filtrent <code>is_deleted=False</code>.</td></tr>
+</table>
+</section>
+
+<!-- ===== S5 : CONTRAINTES D'INTÉGRITÉ ===== -->
+<section id="contraintes">
+<h2>5. Contraintes d'intégrité</h2>
+
+<table>
+  <tr><th>Table</th><th>Contrainte</th><th>Type</th><th>Justification</th></tr>
+  <tr><td>users_user</td><td>email unique</td><td>UNIQUE</td><td>Un seul compte par email</td></tr>
+  <tr><td>organizations_organization</td><td>slug unique</td><td>UNIQUE</td><td>URL-friendly, pas de collision</td></tr>
+  <tr><td>organizations_membership</td><td>(user_id, organization_id) unique</td><td>UNIQUE TOGETHER</td><td>Un user ne peut avoir qu'un seul rôle par orga</td></tr>
+  <tr><td>tickets_ticket</td><td>(organization_id, number) unique</td><td>UNIQUE TOGETHER</td><td>Numéro séquentiel unique par orga</td></tr>
+  <tr><td>tickets_ticket</td><td>status CHECK</td><td>CHECK</td><td>Valeurs autorisées uniquement</td></tr>
+  <tr><td>tickets_ticket</td><td>priority CHECK</td><td>CHECK</td><td>Valeurs autorisées uniquement</td></tr>
+  <tr><td>organizations_membership</td><td>role CHECK</td><td>CHECK</td><td>Valeurs autorisées uniquement</td></tr>
+</table>
+
+<div class="box warn">
+  <span class="ic">⚠️</span>
+  <div>
+    <b>Isolation multi-tenant</b>
+    L'isolation n'est pas une contrainte DB mais une contrainte applicative : chaque QuerySet est filtré par <code>organization_id</code> dans le service layer. Des tests d'intégration dédiés vérifient qu'un utilisateur de l'orga A ne peut jamais accéder aux données de l'orga B. Voir la stratégie détaillée dans le <a href="ticketflow-cdc.html#archi" style="color:var(--accent)">Cahier des Charges §18</a>.
+  </div>
+</div>
+
+<div class="box brain">
+  <span class="ic">🧠</span>
+  <div>
+    <b>Passage du MLD au code Django</b>
+    Chaque table du MLD correspond à un <code>Model</code> Django. Les UUID PK se déclarent avec <code>models.UUIDField(primary_key=True, default=uuid.uuid4)</code>. Les ENUM se déclarent avec <code>models.TextChoices</code>. Les UNIQUE TOGETHER se déclarent dans <code>class Meta: constraints</code>. Les INDEX se déclarent dans <code>class Meta: indexes</code>. Le diagramme de classes complet est dans l'<a href="ticketflow-uml.html#uml-classes" style="color:var(--accent)">Analyse UML §2</a>.
+  </div>
+</div>
+</section>
+
+</div><!-- /main -->
+
+<script>
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('#sidebar nav a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if(window.scrollY >= s.offsetTop - 100) current = s.id;
+  });
+  navLinks.forEach(a => {
+    a.classList.remove('active');
+    if(a.getAttribute('href') === '#' + current) a.classList.add('active');
+  });
+});
+</script>
+
+</body>
+</html>

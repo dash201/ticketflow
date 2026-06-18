@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TicketFlow — Cahier des Charges</title>
+<style>
+:root {
+  --bg:#0a0e14; --bg2:#131820; --bg3:#1a2030; --border:#2a3545;
+  --text:#d4dce8; --muted:#6b7a8d; --accent:#4fc3f7; --green:#66bb6a;
+  --warn:#ffa726; --danger:#ef5350; --purple:#ab7df6; --cyan:#26c6da;
+  --gold:#ffd54f; --pink:#f06292;
+  --mono:'Fira Code','Cascadia Code','JetBrains Mono',monospace;
+  --sans:'Inter','Segoe UI',system-ui,sans-serif; --r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.8}
+
+#sidebar{position:fixed;top:0;left:0;width:280px;height:100vh;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:1.2rem 0;z-index:100;scrollbar-width:thin}
+#sidebar .logo{padding:0 1.2rem 1.2rem;border-bottom:1px solid var(--border);margin-bottom:.8rem}
+#sidebar .logo h2{font-size:.9rem;color:var(--purple);font-weight:700}
+#sidebar .logo p{font-size:.7rem;color:var(--muted);margin-top:.2rem}
+#sidebar .logo a{font-size:.72rem;color:var(--accent);text-decoration:none;display:block;margin-top:.5rem}
+#sidebar .logo a:hover{text-decoration:underline}
+#sidebar nav a{display:block;padding:.4rem 1.2rem;color:var(--muted);text-decoration:none;font-size:.78rem;border-left:3px solid transparent;transition:.15s}
+#sidebar nav a:hover,#sidebar nav a.active{background:var(--bg3);color:var(--text);border-left-color:var(--purple)}
+#sidebar nav .ns{padding:.7rem 1.2rem .2rem;font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);opacity:.55}
+
+#main{margin-left:280px;padding:3rem 3.5rem;max-width:960px}
+section{margin-bottom:4rem;scroll-margin-top:2rem}
+
+h1{font-size:2.2rem;font-weight:800;background:linear-gradient(135deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.2;margin-bottom:.5rem}
+h2{font-size:1.45rem;font-weight:700;margin-bottom:1rem;padding-bottom:.5rem;border-bottom:2px solid var(--border);color:var(--text)}
+h3{font-size:1.05rem;font-weight:600;color:var(--accent);margin:1.6rem 0 .6rem}
+h4{font-size:.92rem;font-weight:600;color:var(--purple);margin:1.1rem 0 .35rem}
+p{margin-bottom:.8rem}
+
+.box{display:flex;gap:.9rem;padding:1rem 1.2rem;border-radius:var(--r);margin:1.2rem 0;border-left:4px solid;font-size:.88rem}
+.box .ic{font-size:1.05rem;flex-shrink:0;margin-top:.1rem}
+.box.info{background:rgba(79,195,247,.06);border-color:var(--accent)}
+.box.warn{background:rgba(255,167,38,.07);border-color:var(--warn)}
+.box.danger{background:rgba(239,83,80,.07);border-color:var(--danger)}
+.box.good{background:rgba(102,187,106,.06);border-color:var(--green)}
+.box.brain{background:rgba(171,125,246,.07);border-color:var(--purple)}
+.box.gold{background:rgba(255,213,79,.06);border-color:var(--gold)}
+.box.pink{background:rgba(240,98,146,.06);border-color:var(--pink)}
+.box b{display:block;margin-bottom:.2rem}
+
+table{width:100%;border-collapse:collapse;font-size:.83rem;margin:.8rem 0 1.2rem}
+th{background:var(--bg3);color:var(--muted);font-weight:600;text-align:left;padding:.55rem .9rem;border-bottom:2px solid var(--border);font-size:.72rem;letter-spacing:.05em;text-transform:uppercase}
+td{padding:.5rem .9rem;border-bottom:1px solid var(--border);vertical-align:top}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin:.8rem 0}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.9rem;margin:.8rem 0}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem}
+.card h4{margin-top:0}
+
+.hero{padding:1.5rem 0 2.5rem;border-bottom:1px solid var(--border);margin-bottom:3rem}
+.hero .sub{font-size:1rem;color:var(--muted);margin-top:.4rem;max-width:600px}
+
+pre{background:#060a10;border:1px solid var(--border);border-radius:var(--r);padding:1.1rem 1.3rem;overflow-x:auto;margin:.8rem 0 1.2rem;font-family:var(--mono);font-size:.8rem;line-height:1.65;position:relative}
+pre .lbl{position:absolute;top:.4rem;right:.6rem;font-size:.62rem;color:var(--muted);background:var(--bg3);padding:.1rem .45rem;border-radius:4px;font-family:var(--sans)}
+code{font-family:var(--mono);font-size:.83em;background:rgba(79,195,247,.1);color:var(--accent);padding:.1em .35em;border-radius:4px}
+pre code{background:none;color:inherit;padding:0;font-size:1em}
+
+.kw{color:#ff7b72}.st{color:#a5d6ff}.cm{color:#6b7a8d;font-style:italic}
+.fn{color:#d2a8ff}.cl{color:#ffa657}.nu{color:#79c0ff}
+.dc{color:#66bb6a}.im{color:#ff7b72}.va{color:#d4dce8}
+
+/* Flow arrows */
+.flow{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;margin:.8rem 0;font-size:.78rem}
+.fb{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:.35rem .75rem;font-family:var(--mono);font-size:.75rem}
+.fb.a{border-color:var(--accent);color:var(--accent)}
+.fb.d{border-color:var(--danger);color:var(--danger)}
+.fb.g{border-color:var(--green);color:var(--green)}
+.fb.p{border-color:var(--purple);color:var(--purple)}
+.fb.w{border-color:var(--gold);color:var(--gold)}
+.fa{color:var(--muted);font-size:.7rem}
+
+/* Status badges */
+.badge{display:inline-block;padding:.15rem .55rem;border-radius:4px;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.badge.must{background:rgba(239,83,80,.15);color:var(--danger)}
+.badge.should{background:rgba(255,167,38,.15);color:var(--warn)}
+.badge.could{background:rgba(102,187,106,.15);color:var(--green)}
+.badge.wont{background:rgba(107,122,141,.15);color:var(--muted)}
+
+/* Priority tags */
+.prio{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;border-radius:4px;font-size:.72rem;font-weight:600}
+.prio.p1{background:rgba(239,83,80,.12);color:var(--danger)}
+.prio.p2{background:rgba(255,167,38,.12);color:var(--warn)}
+.prio.p3{background:rgba(79,195,247,.12);color:var(--accent)}
+.prio.p4{background:rgba(107,122,141,.12);color:var(--muted)}
+
+/* User story cards */
+.us{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.2rem;margin:.8rem 0}
+.us-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
+.us-id{font-family:var(--mono);font-size:.72rem;color:var(--purple);font-weight:700}
+.us-text{font-size:.85rem;color:var(--text);font-style:italic}
+.us-criteria{margin-top:.6rem;font-size:.78rem;color:var(--muted)}
+.us-criteria li{margin:.3rem 0;list-style:none;padding-left:1.2rem;position:relative}
+.us-criteria li::before{content:'✓';position:absolute;left:0;color:var(--green);font-weight:700}
+
+/* Workflow diagram */
+.workflow{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:1rem 0;padding:1rem;background:var(--bg2);border-radius:var(--r);border:1px solid var(--border)}
+.wf-state{padding:.4rem .9rem;border-radius:6px;font-size:.78rem;font-weight:600;text-align:center}
+.wf-arrow{color:var(--muted);font-size:.9rem}
+.wf-new{background:rgba(79,195,247,.15);color:var(--accent);border:1px solid var(--accent)}
+.wf-open{background:rgba(102,187,106,.15);color:var(--green);border:1px solid var(--green)}
+.wf-pending{background:rgba(255,167,38,.15);color:var(--warn);border:1px solid var(--warn)}
+.wf-resolved{background:rgba(171,125,246,.15);color:var(--purple);border:1px solid var(--purple)}
+.wf-closed{background:rgba(107,122,141,.15);color:var(--muted);border:1px solid var(--muted)}
+
+/* File tree */
+.file-tree{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.2rem 1.5rem;font-family:var(--mono);font-size:.78rem;line-height:2;margin:.8rem 0 1.2rem}
+.file-tree .dir{color:var(--accent);font-weight:600}
+.file-tree .file{color:var(--muted)}
+.file-tree .hl{color:var(--purple);font-weight:600}
+
+/* Responsive */
+@media(max-width:768px){
+  #sidebar{display:none}
+  #main{margin-left:0;padding:1.5rem 1.2rem}
+  .grid2,.grid3{grid-template-columns:1fr}
+  h1{font-size:1.6rem}
+  .workflow{flex-direction:column}
+  .wf-arrow{transform:rotate(90deg)}
+}
+
+/* Print A4 */
+@media print{
+  @page{size:A4;margin:18mm 15mm}
+  #sidebar{display:none}
+  #main{margin-left:0;padding:0;max-width:100%}
+  body{background:#fff;color:#1a1a1a;font-size:11pt}
+  .box{break-inside:avoid;border:1px solid #ccc}
+  h2{break-after:avoid;border-color:#999}
+  section{break-inside:avoid}
+  pre{border-color:#ccc;background:#f5f5f5}
+  code{background:rgba(0,0,0,.06);color:#333}
+  .card{border-color:#ccc;background:#fafafa}
+  table{page-break-inside:avoid}
+  th{background:#eee;color:#333;border-color:#999}
+  td{border-color:#ccc}
+  .us{background:#fafafa;border-color:#ccc}
+  .workflow{background:#fafafa;border-color:#ccc}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ SIDEBAR ============ -->
+<div id="sidebar">
+  <div class="logo">
+    <h2>TicketFlow</h2>
+    <p>Cahier des Charges</p>
+    <a href="ticketflow-uml.html">&rarr; Analyse UML</a>
+    <a href="ticketflow-mcd.html">&rarr; MCD / MLD</a>
+    <a href="index.html">&larr; Retour au cours Django</a>
+  </div>
+  <nav>
+    <div class="ns">Cahier des charges</div>
+    <a href="#contexte">1. Contexte & Vision</a>
+    <a href="#objectifs">2. Objectifs</a>
+    <a href="#acteurs">3. Acteurs du système</a>
+    <a href="#perimetre">4. Périmètre fonctionnel</a>
+    <a href="#stories">5. User Stories</a>
+    <a href="#workflow">6. Workflow des tickets</a>
+    <a href="#nf">7. Exigences non-fonctionnelles</a>
+    <a href="#stack">8. Stack technique</a>
+    <a href="#contraintes">9. Contraintes & Livrables</a>
+    <a href="#chrono">10. Chronogramme</a>
+
+    <div class="ns">Annexes</div>
+    <a href="#api">17. Endpoints API</a>
+    <a href="#archi">18. Architecture projet</a>
+  </nav>
+</div>
+
+<!-- ============ MAIN ============ -->
+<div id="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>TicketFlow</h1>
+  <p class="sub">Système de gestion de tickets de support client multi-tenant — Cahier des charges complet. L'analyse UML et la modélisation de données (MCD/MLD) sont disponibles dans des documents séparés.</p>
+  <p style="font-size:.78rem;color:var(--muted);margin-top:.6rem">Projet portfolio — API DRF • Multi-tenant • JWT • Docker</p>
+</div>
+
+<!-- =====================================================
+     PARTIE 1 : CAHIER DES CHARGES
+     ===================================================== -->
+
+<!-- S1 : CONTEXTE -->
+<section id="contexte">
+<h2>1. Contexte & Vision</h2>
+
+<h3>1.1 — Le problème</h3>
+<p>Les PME et startups ont besoin d'un système de support client pour centraliser les demandes de leurs utilisateurs, mais les solutions existantes (Zendesk, Freshdesk, Intercom) sont soit trop coûteuses, soit trop complexes pour leurs besoins. Il n'existe pas de solution open-source légère, multi-tenant, et exposant une API REST propre pour être intégrée à n'importe quel frontend ou outil tiers.</p>
+
+<h3>1.2 — La solution</h3>
+<p><strong>TicketFlow</strong> est une API REST de gestion de tickets de support client. Chaque organisation dispose de son espace isolé (multi-tenant) avec ses agents, ses clients, ses tickets et ses paramètres. L'API est conçue pour être consommée par n'importe quel frontend (React, Vue, mobile) ou intégrée dans un workflow tiers via webhooks.</p>
+
+<div class="box info">
+  <span class="ic">🎯</span>
+  <div>
+    <b>Positionnement portfolio</b>
+    Ce projet démontre la maîtrise de : l'architecture multi-tenant, la conception d'API REST avec DRF, l'authentification JWT, le workflow métier (machine à états), les tests automatisés, le déploiement Docker, et la documentation Swagger/OpenAPI.
+  </div>
+</div>
+
+<h3>1.3 — Benchmark concurrentiel</h3>
+<table>
+  <tr><th>Critère</th><th>Zendesk</th><th>Freshdesk</th><th>TicketFlow</th></tr>
+  <tr><td>Modèle</td><td>SaaS propriétaire</td><td>SaaS propriétaire</td><td>Open-source, self-hosted</td></tr>
+  <tr><td>Multi-tenant</td><td>Oui (SaaS natif)</td><td>Oui (SaaS natif)</td><td>Oui (shared DB, schema isolation)</td></tr>
+  <tr><td>API REST</td><td>Oui</td><td>Oui</td><td>Oui — API-first</td></tr>
+  <tr><td>Prix</td><td>$19-115/agent/mois</td><td>$15-79/agent/mois</td><td>Gratuit</td></tr>
+  <tr><td>Complexité</td><td>Élevée (200+ features)</td><td>Élevée</td><td>Ciblée (core features)</td></tr>
+  <tr><td>Personnalisation</td><td>Limitée</td><td>Limitée</td><td>Totale (code source)</td></tr>
+</table>
+</section>
+
+<!-- S2 : OBJECTIFS -->
+<section id="objectifs">
+<h2>2. Objectifs</h2>
+
+<h3>2.1 — Objectifs fonctionnels</h3>
+<div class="grid2">
+  <div class="card">
+    <h4>OF-1 : Gestion multi-tenant</h4>
+    <p style="font-size:.82rem">Chaque organisation vit dans un espace isolé. Un utilisateur ne voit jamais les données d'une autre organisation. L'isolation est garantie au niveau ORM (QuerySet filtering).</p>
+    <span class="badge must">MUST</span>
+  </div>
+  <div class="card">
+    <h4>OF-2 : CRUD des tickets</h4>
+    <p style="font-size:.82rem">Créer, lire, mettre à jour, filtrer, rechercher et supprimer des tickets. Chaque ticket a un sujet, une description, une priorité, un statut et un assigné.</p>
+    <span class="badge must">MUST</span>
+  </div>
+  <div class="card">
+    <h4>OF-3 : Workflow de statuts</h4>
+    <p style="font-size:.82rem">Les tickets suivent un workflow contrôlé : New → Open → Pending → Resolved → Closed. Les transitions invalides sont rejetées par l'API.</p>
+    <span class="badge must">MUST</span>
+  </div>
+  <div class="card">
+    <h4>OF-4 : Commentaires & historique</h4>
+    <p style="font-size:.82rem">Agents et clients peuvent commenter les tickets. Chaque changement de statut ou d'assignation est tracé dans un historique horodaté.</p>
+    <span class="badge must">MUST</span>
+  </div>
+  <div class="card">
+    <h4>OF-5 : Assignation des agents</h4>
+    <p style="font-size:.82rem">Un ticket peut être assigné à un agent de l'organisation. L'assignation peut être manuelle ou par défaut (round-robin optionnel).</p>
+    <span class="badge must">MUST</span>
+  </div>
+  <div class="card">
+    <h4>OF-6 : Auth & rôles</h4>
+    <p style="font-size:.82rem">Authentification JWT (access + refresh + rotation). 3 rôles par organisation : Admin, Agent, Client. Permissions granulaires par endpoint.</p>
+    <span class="badge must">MUST</span>
+  </div>
+</div>
+
+<h3>2.2 — Objectifs techniques</h3>
+<div class="grid2">
+  <div class="card">
+    <h4>OT-1 : API REST conforme</h4>
+    <p style="font-size:.82rem">Endpoints RESTful, pagination, filtrage, tri, recherche. Réponses JSON standardisées. Documentation OpenAPI/Swagger auto-générée.</p>
+    <span class="badge must">MUST</span>
+  </div>
+  <div class="card">
+    <h4>OT-2 : Tests automatisés</h4>
+    <p style="font-size:.82rem">Couverture >80%. Tests unitaires (models, services), tests d'intégration (endpoints, permissions), tests d'isolation multi-tenant.</p>
+    <span class="badge must">MUST</span>
+  </div>
+  <div class="card">
+    <h4>OT-3 : Docker & CI/CD</h4>
+    <p style="font-size:.82rem">Dockerfile multi-stage, docker-compose (web + db + redis), GitHub Actions (lint, tests, check --deploy).</p>
+    <span class="badge must">MUST</span>
+  </div>
+  <div class="card">
+    <h4>OT-4 : Notifications async</h4>
+    <p style="font-size:.82rem">Notifications par email (Celery + Redis) lors de la création, l'assignation ou le changement de statut d'un ticket.</p>
+    <span class="badge should">SHOULD</span>
+  </div>
+</div>
+
+<h3>2.3 — MoSCoW</h3>
+<table>
+  <tr><th>Priorité</th><th>Périmètre</th></tr>
+  <tr><td><span class="badge must">MUST</span></td><td>Multi-tenant, CRUD tickets, workflow statuts, commentaires, historique, auth JWT, rôles, API REST, Swagger, tests, Docker</td></tr>
+  <tr><td><span class="badge should">SHOULD</span></td><td>Notifications email (Celery), filtrage avancé (django-filter), export CSV, dashboard stats par orga</td></tr>
+  <tr><td><span class="badge could">COULD</span></td><td>Webhooks sortants, tags/labels personnalisés, SLA & temps de réponse, pièces jointes</td></tr>
+  <tr><td><span class="badge wont">WON'T</span></td><td>Chat en temps réel, base de connaissances, frontend intégré, facturation, analytics avancé</td></tr>
+</table>
+</section>
+
+<!-- S3 : ACTEURS -->
+<section id="acteurs">
+<h2>3. Acteurs du système</h2>
+
+<div class="grid3">
+  <div class="card">
+    <h4>🔑 Super Admin</h4>
+    <p style="font-size:.82rem">Administrateur de la plateforme. Gère les organisations, peut accéder à toutes les données. Correspond au <code>is_superuser</code> Django.</p>
+    <p style="font-size:.78rem;color:var(--muted)">Hors scope API publique — accès admin Django uniquement.</p>
+  </div>
+  <div class="card">
+    <h4>👔 Admin (Organisation)</h4>
+    <p style="font-size:.82rem">Propriétaire/administrateur d'une organisation. Gère les agents, configure les paramètres de l'orga, voit toutes les statistiques et tous les tickets de son espace.</p>
+    <p style="font-size:.78rem;color:var(--green)">Rôle : <code>ADMIN</code></p>
+  </div>
+  <div class="card">
+    <h4>🛠 Agent</h4>
+    <p style="font-size:.82rem">Membre de l'équipe support. Traite les tickets, change les statuts, commente, peut être assigné. Voit tous les tickets de son organisation.</p>
+    <p style="font-size:.78rem;color:var(--accent)">Rôle : <code>AGENT</code></p>
+  </div>
+</div>
+<div class="grid2" style="max-width:66%">
+  <div class="card">
+    <h4>👤 Client</h4>
+    <p style="font-size:.82rem">Utilisateur final qui soumet des demandes de support. Ne voit que ses propres tickets. Peut commenter pour apporter des précisions.</p>
+    <p style="font-size:.78rem;color:var(--warn)">Rôle : <code>CLIENT</code></p>
+  </div>
+  <div class="card">
+    <h4>🤖 Système</h4>
+    <p style="font-size:.82rem">Acteur non-humain. Déclenche les notifications, les changements automatiques (timeout, SLA), les tâches Celery.</p>
+    <p style="font-size:.78rem;color:var(--muted)">Pas de rôle — exécution interne</p>
+  </div>
+</div>
+
+<div class="box brain">
+  <span class="ic">🧠</span>
+  <div>
+    <b>Isolation multi-tenant</b>
+    Un Admin, Agent ou Client est toujours rattaché à une organisation via la table <code>Membership</code>. L'organisation agit comme filtre implicite sur toutes les requêtes ORM — un agent de l'orga A ne voit jamais les tickets de l'orga B.
+  </div>
+</div>
+</section>
+
+<!-- S4 : PÉRIMÈTRE FONCTIONNEL -->
+<section id="perimetre">
+<h2>4. Périmètre fonctionnel</h2>
+
+<h3>4.1 — Module Organisations</h3>
+<table>
+  <tr><th>Réf</th><th>Fonctionnalité</th><th>Détail</th><th>Priorité</th></tr>
+  <tr><td>ORG-01</td><td>Créer une organisation</td><td>Nom, slug (unique), plan (free/pro/enterprise). Le créateur devient Admin.</td><td><span class="badge must">MUST</span></td></tr>
+  <tr><td>ORG-02</td><td>Paramètres de l'orga</td><td>Nom, logo URL, fuseau horaire, langue par défaut, auto-assign on/off</td><td><span class="badge should">SHOULD</span></td></tr>
+  <tr><td>ORG-03</td><td>Inviter un membre</td><td>L'admin invite par email. Le membre reçoit un lien et rejoint l'orga avec le rôle spécifié (agent ou client).</td><td><span class="badge must">MUST</span></td></tr>
+  <tr><td>ORG-04</td><td>Gérer les membres</td><td>Lister, changer le rôle, retirer un membre. L'admin ne peut pas se retirer lui-même.</td><td><span class="badge must">MUST</span></td></tr>
+  <tr><td>ORG-05</td><td>Dashboard orga</td><td>Stats : tickets ouverts, temps moyen de résolution, tickets par priorité, agents les plus actifs</td><td><span class="badge should">SHOULD</span></td></tr>
+</table>
+
+<h3>4.2 — Module Tickets</h3>
+<table>
+  <tr><th>Réf</th><th>Fonctionnalité</th><th>Détail</th><th>Priorité</th></tr>
+  <tr><td>TKT-01</td><td>Créer un ticket</td><td>Sujet, description, priorité (low/medium/high/urgent). Le ticket reçoit un numéro séquentiel par orga (TF-001, TF-002...).</td><td><span class="badge must">MUST</span></td></tr>
+  <tr><td>TKT-02</td><td>Lister les tickets</td><td>Pagination, filtrage par statut/priorité/assigné/date, tri par date/priorité, recherche textuelle (sujet + description).</td><td><span class="badge must">MUST</span></td></tr>
+  <tr><td>TKT-03</td><td>Détail d'un ticket</td><td>Toutes les infos + commentaires + historique des changements.</td><td><span class="badge must">MUST</span></td></tr>
+  <tr><td>TKT-04</td><td>Modifier un ticket</td><td>Changer priorité, sujet, description. Seuls l'admin, l'agent assigné, ou le client auteur peuvent modifier.</td><td><span class="badge must">MUST</span></td></tr>
+  <tr><td>TKT-05</td><td>Changer le statut</td><td>Transition contrôlée par la machine à états. Seuls les agents et admins peuvent changer le statut.</td><td><span class="badge must">MUST</span></td></tr>
+  <tr><td>TKT-06</td><td>Assigner un agent</td><td>Admin ou agent assigne un ticket à un autre agent de la même orga. Auto-assign optionnel (round-robin).</td><td><span class="badge must">MUST</span></td></tr>
+  <tr><td>TKT-07</td><td>Tags / Labels</td><td>Tags personnalisés par orga (bug, feature, question...). Filtrable.</td><td><span class="badge could">COULD</span></td></tr>
+  <tr><td>TKT-08</td><td>Export CSV</td><td>Export des tickets filtrés au format CSV pour analyse externe.</td><td><span class="badge should">SHOULD</span></td></tr>
+</table>
+
+<h3>4.3 — Module Commentaires</h3>
+<table>
+  <tr><th>Réf</th><th>Fonctionnalité</th><th>Détail</th><th>Priorité</th></tr>
+  <tr><td>COM-01</td><td>Ajouter un commentaire</td><td>Texte. L'auteur est identifié. Un commentaire peut être "interne" (visible uniquement par les agents/admins).</td><td><span class="badge must">MUST</span></td></tr>
+  <tr><td>COM-02</td><td>Lister les commentaires</td><td>Chronologique. Les commentaires internes sont filtrés côté API pour les clients.</td><td><span class="badge must">MUST</span></td></tr>
+  <tr><td>COM-03</td><td>Modifier/supprimer</td><td>L'auteur peut modifier dans les 15 minutes. Suppression = soft delete.</td><td><span class="badge should">SHOULD</span></td></tr>
+</table>
+
+<h3>4.4 — Module Historique</h3>
+<table>
+  <tr><th>Réf</th><th>Fonctionnalité</th><th>Détail</th><th>Priorité</th></tr>
+  <tr><td>HIS-01</td><td>Log automatique</td><td>Chaque changement de statut, d'assignation ou de priorité crée une entrée dans l'historique avec : auteur, ancien/nouveau valeur, timestamp.</td><td><span class="badge must">MUST</span></td></tr>
+  <tr><td>HIS-02</td><td>Consulter l'historique</td><td>Timeline visible dans le détail du ticket. Tri chronologique.</td><td><span class="badge must">MUST</span></td></tr>
+</table>
+
+<h3>4.5 — Module Auth & Utilisateurs</h3>
+<table>
+  <tr><th>Réf</th><th>Fonctionnalité</th><th>Détail</th><th>Priorité</th></tr>
+  <tr><td>AUT-01</td><td>Inscription</td><td>Email + mot de passe. Pas de username. Validation email unique.</td><td><span class="badge must">MUST</span></td></tr>
+  <tr><td>AUT-02</td><td>Login JWT</td><td>Retourne access token (15min) + refresh token (7j). Rotation du refresh à chaque usage. Blacklist à la déconnexion.</td><td><span class="badge must">MUST</span></td></tr>
+  <tr><td>AUT-03</td><td>Profil utilisateur</td><td>Voir/modifier son profil (nom, email). Changer son mot de passe.</td><td><span class="badge must">MUST</span></td></tr>
+  <tr><td>AUT-04</td><td>Déconnexion</td><td>Blacklist du refresh token en cours.</td><td><span class="badge must">MUST</span></td></tr>
+  <tr><td>AUT-05</td><td>Reset mot de passe</td><td>Email avec lien de réinitialisation (token temporaire).</td><td><span class="badge should">SHOULD</span></td></tr>
+</table>
+
+<h3>4.6 — Module Notifications</h3>
+<table>
+  <tr><th>Réf</th><th>Fonctionnalité</th><th>Détail</th><th>Priorité</th></tr>
+  <tr><td>NOT-01</td><td>Notification nouveau ticket</td><td>Email aux agents de l'orga quand un client crée un ticket.</td><td><span class="badge should">SHOULD</span></td></tr>
+  <tr><td>NOT-02</td><td>Notification assignation</td><td>Email à l'agent assigné.</td><td><span class="badge should">SHOULD</span></td></tr>
+  <tr><td>NOT-03</td><td>Notification changement statut</td><td>Email au client quand le statut change.</td><td><span class="badge should">SHOULD</span></td></tr>
+  <tr><td>NOT-04</td><td>Notification commentaire</td><td>Email aux participants du ticket.</td><td><span class="badge should">SHOULD</span></td></tr>
+</table>
+</section>
+
+<!-- S5 : USER STORIES -->
+<section id="stories">
+<h2>5. User Stories</h2>
+
+<h3>5.1 — Inscription & Organisation</h3>
+
+<div class="us">
+  <div class="us-header">
+    <span class="us-id">US-01</span>
+    <span class="badge must">MUST</span>
+  </div>
+  <p class="us-text">En tant qu'utilisateur non inscrit, je veux créer un compte avec mon email et un mot de passe, afin d'accéder à la plateforme.</p>
+  <ul class="us-criteria">
+    <li>Le mot de passe doit respecter les règles Django (min 8 chars, pas trop commun, pas entièrement numérique)</li>
+    <li>L'email doit être unique</li>
+    <li>La réponse contient les tokens JWT (access + refresh)</li>
+  </ul>
+</div>
+
+<div class="us">
+  <div class="us-header">
+    <span class="us-id">US-02</span>
+    <span class="badge must">MUST</span>
+  </div>
+  <p class="us-text">En tant qu'utilisateur authentifié, je veux créer une organisation, afin de commencer à recevoir des tickets de support.</p>
+  <ul class="us-criteria">
+    <li>L'organisation a un nom et un slug unique (auto-généré ou personnalisé)</li>
+    <li>Le créateur obtient automatiquement le rôle ADMIN dans cette organisation</li>
+    <li>Un utilisateur peut appartenir à plusieurs organisations</li>
+  </ul>
+</div>
+
+<div class="us">
+  <div class="us-header">
+    <span class="us-id">US-03</span>
+    <span class="badge must">MUST</span>
+  </div>
+  <p class="us-text">En tant qu'admin d'une organisation, je veux inviter des agents et des clients par email, afin de constituer mon équipe de support et ma base de clients.</p>
+  <ul class="us-criteria">
+    <li>L'invitation spécifie le rôle (AGENT ou CLIENT)</li>
+    <li>Si l'email correspond à un compte existant, le membership est créé directement</li>
+    <li>Si l'email est inconnu, un lien d'invitation est envoyé</li>
+  </ul>
+</div>
+
+<h3>5.2 — Gestion des tickets</h3>
+
+<div class="us">
+  <div class="us-header">
+    <span class="us-id">US-04</span>
+    <span class="badge must">MUST</span>
+  </div>
+  <p class="us-text">En tant que client, je veux créer un ticket de support avec un sujet, une description et une priorité, afin de signaler un problème ou poser une question.</p>
+  <ul class="us-criteria">
+    <li>Le ticket reçoit un numéro séquentiel (TF-001)</li>
+    <li>Le statut initial est NEW</li>
+    <li>L'organisation est déduite du membership actif du client</li>
+    <li>Les agents de l'orga sont notifiés (si notifications activées)</li>
+  </ul>
+</div>
+
+<div class="us">
+  <div class="us-header">
+    <span class="us-id">US-05</span>
+    <span class="badge must">MUST</span>
+  </div>
+  <p class="us-text">En tant qu'agent, je veux voir la liste de tous les tickets de mon organisation avec des filtres (statut, priorité, assigné), afin de prioriser mon travail.</p>
+  <ul class="us-criteria">
+    <li>Pagination par 20 (configurable)</li>
+    <li>Filtrage par : statut, priorité, assigné, date de création</li>
+    <li>Tri par : date, priorité, dernière mise à jour</li>
+    <li>Recherche textuelle sur sujet et description</li>
+  </ul>
+</div>
+
+<div class="us">
+  <div class="us-header">
+    <span class="us-id">US-06</span>
+    <span class="badge must">MUST</span>
+  </div>
+  <p class="us-text">En tant qu'agent, je veux assigner un ticket à moi-même ou à un collègue, afin de clarifier la responsabilité du traitement.</p>
+  <ul class="us-criteria">
+    <li>L'assigné doit être un agent ou admin de la même organisation</li>
+    <li>Le changement d'assignation est tracé dans l'historique</li>
+    <li>L'agent assigné est notifié</li>
+  </ul>
+</div>
+
+<div class="us">
+  <div class="us-header">
+    <span class="us-id">US-07</span>
+    <span class="badge must">MUST</span>
+  </div>
+  <p class="us-text">En tant qu'agent, je veux changer le statut d'un ticket selon le workflow défini, afin de refléter l'avancement du traitement.</p>
+  <ul class="us-criteria">
+    <li>Seules les transitions valides sont autorisées (cf. diagramme d'états dans <a href="ticketflow-uml.html" style="color:var(--accent)">l'analyse UML</a>)</li>
+    <li>La transition est tracée dans l'historique avec ancien et nouveau statut</li>
+    <li>Le client est notifié du changement</li>
+  </ul>
+</div>
+
+<h3>5.3 — Commentaires</h3>
+
+<div class="us">
+  <div class="us-header">
+    <span class="us-id">US-08</span>
+    <span class="badge must">MUST</span>
+  </div>
+  <p class="us-text">En tant que client ou agent, je veux ajouter un commentaire à un ticket, afin d'apporter des précisions ou une réponse.</p>
+  <ul class="us-criteria">
+    <li>Le commentaire est horodaté et identifie l'auteur</li>
+    <li>Un agent peut marquer un commentaire comme "interne" (invisible pour le client)</li>
+    <li>Les participants sont notifiés</li>
+  </ul>
+</div>
+
+<div class="us">
+  <div class="us-header">
+    <span class="us-id">US-09</span>
+    <span class="badge must">MUST</span>
+  </div>
+  <p class="us-text">En tant que client, je veux voir l'historique complet de mon ticket (commentaires + changements de statut), afin de suivre l'avancement de ma demande.</p>
+  <ul class="us-criteria">
+    <li>Les commentaires internes sont exclus pour le client</li>
+    <li>L'historique est trié chronologiquement</li>
+    <li>Chaque entrée affiche le type (commentaire, changement de statut, assignation)</li>
+  </ul>
+</div>
+</section>
+
+<!-- S6 : WORKFLOW -->
+<section id="workflow">
+<h2>6. Workflow des tickets</h2>
+
+<h3>6.1 — Machine à états</h3>
+
+<div class="workflow">
+  <span class="wf-state wf-new">NEW</span>
+  <span class="wf-arrow">&rarr;</span>
+  <span class="wf-state wf-open">OPEN</span>
+  <span class="wf-arrow">&rarr;</span>
+  <span class="wf-state wf-pending">PENDING</span>
+  <span class="wf-arrow">&rarr;</span>
+  <span class="wf-state wf-resolved">RESOLVED</span>
+  <span class="wf-arrow">&rarr;</span>
+  <span class="wf-state wf-closed">CLOSED</span>
+</div>
+
+<h3>6.2 — Transitions autorisées</h3>
+<table>
+  <tr><th>État source</th><th>État cible</th><th>Qui peut</th><th>Condition</th></tr>
+  <tr><td><span class="wf-state wf-new" style="font-size:.72rem;padding:.2rem .5rem">NEW</span></td><td><span class="wf-state wf-open" style="font-size:.72rem;padding:.2rem .5rem">OPEN</span></td><td>Agent, Admin</td><td>Ticket pris en charge (assignation implicite ou explicite)</td></tr>
+  <tr><td><span class="wf-state wf-open" style="font-size:.72rem;padding:.2rem .5rem">OPEN</span></td><td><span class="wf-state wf-pending" style="font-size:.72rem;padding:.2rem .5rem">PENDING</span></td><td>Agent, Admin</td><td>En attente d'une réponse du client</td></tr>
+  <tr><td><span class="wf-state wf-pending" style="font-size:.72rem;padding:.2rem .5rem">PENDING</span></td><td><span class="wf-state wf-open" style="font-size:.72rem;padding:.2rem .5rem">OPEN</span></td><td>Agent, Admin, Client</td><td>Le client répond (commentaire) ou l'agent reprend</td></tr>
+  <tr><td><span class="wf-state wf-open" style="font-size:.72rem;padding:.2rem .5rem">OPEN</span></td><td><span class="wf-state wf-resolved" style="font-size:.72rem;padding:.2rem .5rem">RESOLVED</span></td><td>Agent, Admin</td><td>Le problème est résolu</td></tr>
+  <tr><td><span class="wf-state wf-pending" style="font-size:.72rem;padding:.2rem .5rem">PENDING</span></td><td><span class="wf-state wf-resolved" style="font-size:.72rem;padding:.2rem .5rem">RESOLVED</span></td><td>Agent, Admin</td><td>Résolu sans réponse du client</td></tr>
+  <tr><td><span class="wf-state wf-resolved" style="font-size:.72rem;padding:.2rem .5rem">RESOLVED</span></td><td><span class="wf-state wf-closed" style="font-size:.72rem;padding:.2rem .5rem">CLOSED</span></td><td>Agent, Admin, Système</td><td>Confirmation manuelle ou auto-close après 7 jours</td></tr>
+  <tr><td><span class="wf-state wf-resolved" style="font-size:.72rem;padding:.2rem .5rem">RESOLVED</span></td><td><span class="wf-state wf-open" style="font-size:.72rem;padding:.2rem .5rem">OPEN</span></td><td>Client</td><td>Le client rouvre — le problème persiste</td></tr>
+  <tr><td><span class="wf-state wf-closed" style="font-size:.72rem;padding:.2rem .5rem">CLOSED</span></td><td><span class="wf-state wf-open" style="font-size:.72rem;padding:.2rem .5rem">OPEN</span></td><td>Admin</td><td>Réouverture exceptionnelle</td></tr>
+</table>
+
+<div class="box warn">
+  <span class="ic">⚠️</span>
+  <div>
+    <b>Transitions interdites</b>
+    Toute transition non listée ci-dessus est rejetée avec une erreur <code>400 Bad Request</code> et un message explicite : <code>{"error": "Transition de 'NEW' vers 'CLOSED' non autorisée"}</code>.
+  </div>
+</div>
+
+<h3>6.3 — Matrice de permissions par rôle</h3>
+<table>
+  <tr><th>Action</th><th>Client</th><th>Agent</th><th>Admin</th></tr>
+  <tr><td>Créer un ticket</td><td>✅</td><td>✅</td><td>✅</td></tr>
+  <tr><td>Voir ses propres tickets</td><td>✅</td><td>✅</td><td>✅</td></tr>
+  <tr><td>Voir tous les tickets de l'orga</td><td>❌</td><td>✅</td><td>✅</td></tr>
+  <tr><td>Changer le statut</td><td>⚡ (réouverture seulement)</td><td>✅</td><td>✅</td></tr>
+  <tr><td>Assigner un ticket</td><td>❌</td><td>✅</td><td>✅</td></tr>
+  <tr><td>Commentaire public</td><td>✅</td><td>✅</td><td>✅</td></tr>
+  <tr><td>Commentaire interne</td><td>❌</td><td>✅</td><td>✅</td></tr>
+  <tr><td>Inviter un membre</td><td>❌</td><td>❌</td><td>✅</td></tr>
+  <tr><td>Gérer les membres</td><td>❌</td><td>❌</td><td>✅</td></tr>
+  <tr><td>Voir le dashboard</td><td>❌</td><td>❌</td><td>✅</td></tr>
+  <tr><td>Supprimer un ticket</td><td>❌</td><td>❌</td><td>✅ (soft delete)</td></tr>
+</table>
+</section>
+
+<!-- S7 : NON-FONCTIONNEL -->
+<section id="nf">
+<h2>7. Exigences non-fonctionnelles</h2>
+
+<div class="grid2">
+  <div class="card">
+    <h4>🔒 Sécurité</h4>
+    <p style="font-size:.82rem">
+      Isolation multi-tenant vérifiée par tests automatisés (un user ne peut jamais accéder aux données d'une autre orga).
+      Protection OWASP : pas de SQL injection (ORM), pas de mass assignment (serializer fields explicites), pas d'IDOR (QuerySet filtré par orga), rate limiting (throttling DRF).
+      JWT avec rotation du refresh token et blacklist.
+    </p>
+  </div>
+  <div class="card">
+    <h4>⚡ Performance</h4>
+    <p style="font-size:.82rem">
+      Temps de réponse API &lt; 200ms pour les endpoints de liste (avec pagination).
+      Utilisation de <code>select_related</code> / <code>prefetch_related</code> pour éviter les N+1.
+      Index DB sur les colonnes filtrées (statut, priorité, organisation, assigné, created_at).
+    </p>
+  </div>
+  <div class="card">
+    <h4>🧪 Testabilité</h4>
+    <p style="font-size:.82rem">
+      Couverture &gt; 80%. Tests d'isolation multi-tenant dédiés. Factory Boy pour les fixtures. Tests paramétrés pour les permissions (chaque combinaison rôle × action). CI qui bloque le merge si les tests échouent.
+    </p>
+  </div>
+  <div class="card">
+    <h4>📖 Maintenabilité</h4>
+    <p style="font-size:.82rem">
+      Service layer pour la logique métier (pas de fat views/models). Code formaté (ruff). Type hints sur les signatures publiques. Documentation docstring sur les services.
+    </p>
+  </div>
+  <div class="card">
+    <h4>📦 Déployabilité</h4>
+    <p style="font-size:.82rem">
+      Un <code>docker-compose up</code> lance tout l'environnement (web + db + redis). Variables d'environnement pour la configuration (pas de secrets dans le code). GitHub Actions pour CI/CD.
+    </p>
+  </div>
+  <div class="card">
+    <h4>📄 Documentation</h4>
+    <p style="font-size:.82rem">
+      Swagger/OpenAPI auto-généré par <code>drf-spectacular</code>. README avec instructions d'installation, d'utilisation et de contribution. Exemples de requêtes cURL pour chaque endpoint.
+    </p>
+  </div>
+</div>
+</section>
+
+<!-- S8 : STACK -->
+<section id="stack">
+<h2>8. Stack technique</h2>
+
+<table>
+  <tr><th>Couche</th><th>Technologie</th><th>Justification</th></tr>
+  <tr><td>Langage</td><td>Python 3.12+</td><td>Typage moderne, performance améliorée</td></tr>
+  <tr><td>Framework</td><td>Django 5.x + DRF 3.15+</td><td>ORM mature, écosystème riche, batteries included</td></tr>
+  <tr><td>Auth</td><td>Simple JWT</td><td>Access/refresh/rotation/blacklist — standard industrie</td></tr>
+  <tr><td>Docs API</td><td>drf-spectacular</td><td>OpenAPI 3.0, Swagger UI, Redoc intégré</td></tr>
+  <tr><td>Filtrage</td><td>django-filter</td><td>Filtrage déclaratif, intégration DRF native</td></tr>
+  <tr><td>DB</td><td>PostgreSQL 16</td><td>Performance, JSON, full-text search, contraintes avancées</td></tr>
+  <tr><td>Cache / Broker</td><td>Redis 7</td><td>Cache, sessions, broker Celery — un seul service pour 3 usages</td></tr>
+  <tr><td>Tâches async</td><td>Celery 5.x</td><td>Emails, auto-close tickets, tâches planifiées</td></tr>
+  <tr><td>Containerisation</td><td>Docker + docker-compose</td><td>Environnement reproductible, déploiement simplifié</td></tr>
+  <tr><td>CI</td><td>GitHub Actions</td><td>Lint (ruff) + tests (pytest) + check --deploy</td></tr>
+  <tr><td>Tests</td><td>pytest + pytest-django + Factory Boy</td><td>Fixtures élégantes, tests paramétrés, couverture</td></tr>
+  <tr><td>Linting</td><td>ruff</td><td>Remplace flake8 + isort + black — tout-en-un, rapide</td></tr>
+</table>
+</section>
+
+<!-- S9 : CONTRAINTES & LIVRABLES -->
+<section id="contraintes">
+<h2>9. Contraintes & Livrables</h2>
+
+<h3>9.1 — Contraintes</h3>
+<div class="grid2">
+  <div class="card">
+    <h4>API-first</h4>
+    <p style="font-size:.82rem">Aucune vue HTML/template Django. Tout passe par l'API REST. Le frontend est hors périmètre.</p>
+  </div>
+  <div class="card">
+    <h4>Pas de données réelles</h4>
+    <p style="font-size:.82rem">Le projet utilise des fixtures de démonstration (seed data) pour les démos et les tests.</p>
+  </div>
+  <div class="card">
+    <h4>Code portfolio-ready</h4>
+    <p style="font-size:.82rem">Code lisible, commenté aux points clés, structuré en couches (views → services → models). README complet.</p>
+  </div>
+  <div class="card">
+    <h4>Multi-tenant dès le départ</h4>
+    <p style="font-size:.82rem">L'isolation par organisation est un invariant architectural, pas un ajout tardif. Chaque QuerySet est filtré par orga.</p>
+  </div>
+</div>
+
+<h3>9.2 — Livrables</h3>
+<table>
+  <tr><th>Livrable</th><th>Description</th></tr>
+  <tr><td>Code source</td><td>Répertoire <code>ticketflow/</code> avec manage.py, apps, config, tests, Dockerfile, docker-compose.yml</td></tr>
+  <tr><td>README.md</td><td>Installation, lancement, architecture, endpoints principaux, exemples cURL</td></tr>
+  <tr><td>Documentation API</td><td>Swagger UI accessible sur <code>/api/docs/</code>, Redoc sur <code>/api/redoc/</code></td></tr>
+  <tr><td>Tests</td><td>Suite pytest avec couverture &gt; 80%, incluant tests d'isolation multi-tenant</td></tr>
+  <tr><td>Seed data</td><td>Commande <code>manage.py seed</code> pour créer 2 orgas de démo avec tickets, agents, clients</td></tr>
+  <tr><td>CI config</td><td>Fichier <code>.github/workflows/ci.yml</code> pour GitHub Actions</td></tr>
+</table>
+</section>
+
+<!-- S10 : CHRONOGRAMME -->
+<section id="chrono">
+<h2>10. Chronogramme — Planning de réalisation</h2>
+
+<p>Estimation basée sur un développeur junior-intermédiaire, travaillant en solo, à temps plein. Les durées incluent les tests unitaires et d'intégration pour chaque tâche.</p>
+
+<h3>10.1 — Découpage et estimation par tâche</h3>
+<table>
+  <tr><th>Phase</th><th>Tâche</th><th>Durée (j)</th><th>Dépendances</th><th>Livrable</th></tr>
+  <tr><td rowspan="3" style="color:var(--accent);font-weight:600">P1 — Setup</td><td>T1 : Init projet Django + config settings</td><td>1</td><td>—</td><td>Projet fonctionnel, docker-compose up</td></tr>
+  <tr><td>T2 : Docker + PostgreSQL + Redis</td><td>1</td><td>T1</td><td>docker-compose.yml + .env.example</td></tr>
+  <tr><td>T3 : CI GitHub Actions (lint + tests)</td><td>0.5</td><td>T1</td><td>.github/workflows/ci.yml</td></tr>
+
+  <tr><td rowspan="3" style="color:var(--green);font-weight:600">P2 — Auth</td><td>T4 : Custom User model (email-based)</td><td>1</td><td>T1</td><td>accounts/models.py + migrations + tests</td></tr>
+  <tr><td>T5 : JWT endpoints (register, login, refresh, logout, me)</td><td>2</td><td>T4</td><td>accounts/views + serializers + tests</td></tr>
+  <tr><td>T6 : Change password + profil</td><td>0.5</td><td>T5</td><td>Endpoints PATCH /me/ + tests</td></tr>
+
+  <tr><td rowspan="4" style="color:var(--purple);font-weight:600">P3 — Orga</td><td>T7 : Models Organization + Membership</td><td>1</td><td>T4</td><td>organizations/models.py + migrations</td></tr>
+  <tr><td>T8 : CRUD Organisation + dashboard</td><td>1.5</td><td>T7</td><td>views + serializers + services + tests</td></tr>
+  <tr><td>T9 : Invite + gérer membres + permissions</td><td>2</td><td>T8</td><td>Invitation flow + permissions.py + tests</td></tr>
+  <tr><td>T10 : Tests d'isolation multi-tenant (orgas)</td><td>1</td><td>T9</td><td>test_isolation.py dédié</td></tr>
+
+  <tr><td rowspan="5" style="color:var(--warn);font-weight:600">P4 — Tickets</td><td>T11 : Model Ticket + numérotation séquentielle</td><td>1</td><td>T7</td><td>tickets/models.py + next_ticket_number()</td></tr>
+  <tr><td>T12 : CRUD tickets + filtres + pagination</td><td>2</td><td>T11</td><td>views + filters.py + serializers + tests</td></tr>
+  <tr><td>T13 : Machine à états (state_machine.py)</td><td>1.5</td><td>T11</td><td>TRANSITIONS dict + validate() + tests paramétrés</td></tr>
+  <tr><td>T14 : Assignation + service layer</td><td>1</td><td>T12, T13</td><td>TicketService.assign() + tests</td></tr>
+  <tr><td>T15 : Tests d'isolation multi-tenant (tickets)</td><td>1</td><td>T14</td><td>Cross-org access forbidden tests</td></tr>
+
+  <tr><td rowspan="2" style="color:var(--cyan);font-weight:600">P5 — Comments</td><td>T16 : Model Comment + CRUD + is_internal</td><td>1.5</td><td>T12</td><td>Comment endpoints + filtrage internes + tests</td></tr>
+  <tr><td>T17 : Modification 15min + soft delete</td><td>0.5</td><td>T16</td><td>Window-based edit permission + tests</td></tr>
+
+  <tr><td rowspan="2" style="color:var(--pink);font-weight:600">P6 — History</td><td>T18 : Model TicketHistory + auto-logging</td><td>1</td><td>T13</td><td>History auto-created on status/assign/priority</td></tr>
+  <tr><td>T19 : Timeline endpoint (merge history + comments)</td><td>1</td><td>T16, T18</td><td>GET /tickets/{id}/history/ + tests</td></tr>
+
+  <tr><td rowspan="2" style="color:var(--muted);font-weight:600">P7 — Async</td><td>T20 : Celery setup + notifications email</td><td>1.5</td><td>T2</td><td>celery.py + tasks.py + templates email</td></tr>
+  <tr><td>T21 : Auto-close tickets RESOLVED après 7j</td><td>0.5</td><td>T13, T20</td><td>Celery beat task + tests</td></tr>
+
+  <tr><td rowspan="3" style="color:var(--gold);font-weight:600">P8 — Finition</td><td>T22 : drf-spectacular (Swagger/Redoc)</td><td>1</td><td>T19</td><td>/api/docs/ + /api/redoc/ fonctionnels</td></tr>
+  <tr><td>T23 : Seed data (manage.py seed)</td><td>0.5</td><td>T19</td><td>2 orgas de démo, tickets, agents, clients</td></tr>
+  <tr><td>T24 : README.md + revue finale + couverture</td><td>1</td><td>T22, T23</td><td>README complet + coverage &gt; 80%</td></tr>
+</table>
+
+<div class="box info">
+  <span class="ic">📊</span>
+  <div>
+    <b>Résumé des estimations</b><br>
+    <strong>Total : 25.5 jours ouvrés</strong> (~5 semaines à temps plein, ~6-7 semaines à mi-temps).<br>
+    Phase critique (chemin le plus long) : P1 → P2 → P3 → P4 → P6 → P8 = 19.5 jours.
+  </div>
+</div>
+
+<h3>10.2 — Chronogramme (diagramme de Gantt)</h3>
+
+<div class="uml-diagram">
+<div class="uml-title">Gantt — Planning de réalisation TicketFlow (25.5 jours)</div>
+<svg viewBox="0 0 900 580" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:900px">
+
+  <!-- Grid header: weeks -->
+  <text x="215" y="15" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8" font-weight="600">SEMAINE 1</text>
+  <text x="425" y="15" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8" font-weight="600">SEMAINE 2</text>
+  <text x="635" y="15" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8" font-weight="600">SEMAINE 3</text>
+  <text x="805" y="15" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8" font-weight="600">S4-S5</text>
+
+  <!-- Week separators -->
+  <line x1="190" y1="22" x2="190" y2="570" stroke="#2a3545" stroke-width="0.5"/>
+  <line x1="400" y1="22" x2="400" y2="570" stroke="#2a3545" stroke-width="0.5"/>
+  <line x1="610" y1="22" x2="610" y2="570" stroke="#2a3545" stroke-width="0.5"/>
+  <line x1="820" y1="22" x2="820" y2="570" stroke="#2a3545" stroke-width="0.5"/>
+
+  <!-- Scale: 1 day = 42px, starts at x=190 -->
+
+  <!-- P1 Setup -->
+  <text x="5" y="58" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="9" font-weight="600">P1 Setup</text>
+  <text x="5" y="73" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T1: Init projet</text>
+  <rect x="190" y="63" width="42" height="14" rx="3" fill="rgba(79,195,247,.3)" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="5" y="93" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T2: Docker</text>
+  <rect x="232" y="83" width="42" height="14" rx="3" fill="rgba(79,195,247,.3)" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="5" y="113" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T3: CI</text>
+  <rect x="232" y="103" width="21" height="14" rx="3" fill="rgba(79,195,247,.3)" stroke="#4fc3f7" stroke-width="1"/>
+
+  <!-- P2 Auth -->
+  <text x="5" y="143" fill="#66bb6a" font-family="Inter,sans-serif" font-size="9" font-weight="600">P2 Auth</text>
+  <text x="5" y="158" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T4: User model</text>
+  <rect x="232" y="148" width="42" height="14" rx="3" fill="rgba(102,187,106,.3)" stroke="#66bb6a" stroke-width="1"/>
+  <text x="5" y="178" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T5: JWT endpoints</text>
+  <rect x="274" y="168" width="84" height="14" rx="3" fill="rgba(102,187,106,.3)" stroke="#66bb6a" stroke-width="1"/>
+  <text x="5" y="198" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T6: Password</text>
+  <rect x="358" y="188" width="21" height="14" rx="3" fill="rgba(102,187,106,.3)" stroke="#66bb6a" stroke-width="1"/>
+
+  <!-- P3 Orga -->
+  <text x="5" y="228" fill="#ab7df6" font-family="Inter,sans-serif" font-size="9" font-weight="600">P3 Orga</text>
+  <text x="5" y="243" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T7: Models Org</text>
+  <rect x="274" y="233" width="42" height="14" rx="3" fill="rgba(171,125,246,.3)" stroke="#ab7df6" stroke-width="1"/>
+  <text x="5" y="263" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T8: CRUD Org</text>
+  <rect x="316" y="253" width="63" height="14" rx="3" fill="rgba(171,125,246,.3)" stroke="#ab7df6" stroke-width="1"/>
+  <text x="5" y="283" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T9: Invite/membres</text>
+  <rect x="379" y="273" width="84" height="14" rx="3" fill="rgba(171,125,246,.3)" stroke="#ab7df6" stroke-width="1"/>
+  <text x="5" y="303" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T10: Tests isolation</text>
+  <rect x="463" y="293" width="42" height="14" rx="3" fill="rgba(171,125,246,.3)" stroke="#ab7df6" stroke-width="1"/>
+
+  <!-- P4 Tickets -->
+  <text x="5" y="333" fill="#ffa726" font-family="Inter,sans-serif" font-size="9" font-weight="600">P4 Tickets</text>
+  <text x="5" y="348" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T11: Model Ticket</text>
+  <rect x="274" y="338" width="42" height="14" rx="3" fill="rgba(255,167,38,.3)" stroke="#ffa726" stroke-width="1"/>
+  <text x="5" y="368" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T12: CRUD+filtres</text>
+  <rect x="316" y="358" width="84" height="14" rx="3" fill="rgba(255,167,38,.3)" stroke="#ffa726" stroke-width="1"/>
+  <text x="5" y="388" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T13: State machine</text>
+  <rect x="316" y="378" width="63" height="14" rx="3" fill="rgba(255,167,38,.3)" stroke="#ffa726" stroke-width="1"/>
+  <text x="5" y="408" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T14: Assignation</text>
+  <rect x="463" y="398" width="42" height="14" rx="3" fill="rgba(255,167,38,.3)" stroke="#ffa726" stroke-width="1"/>
+  <text x="5" y="428" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T15: Tests isolation</text>
+  <rect x="505" y="418" width="42" height="14" rx="3" fill="rgba(255,167,38,.3)" stroke="#ffa726" stroke-width="1"/>
+
+  <!-- P5 Comments -->
+  <text x="5" y="458" fill="#26c6da" font-family="Inter,sans-serif" font-size="9" font-weight="600">P5 Comments</text>
+  <text x="5" y="473" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T16: Comment CRUD</text>
+  <rect x="484" y="463" width="63" height="14" rx="3" fill="rgba(38,198,218,.3)" stroke="#26c6da" stroke-width="1"/>
+  <text x="5" y="493" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T17: Edit 15min</text>
+  <rect x="547" y="483" width="21" height="14" rx="3" fill="rgba(38,198,218,.3)" stroke="#26c6da" stroke-width="1"/>
+
+  <!-- P6 History -->
+  <text x="5" y="515" fill="#f06292" font-family="Inter,sans-serif" font-size="9" font-weight="600">P6 History</text>
+  <text x="5" y="528" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">T18-T19</text>
+  <rect x="442" y="518" width="42" height="14" rx="3" fill="rgba(240,98,146,.3)" stroke="#f06292" stroke-width="1"/>
+  <text x="488" y="528" fill="#6b7a8d" font-family="Fira Code,monospace" font-size="7">T18</text>
+  <rect x="568" y="518" width="42" height="14" rx="3" fill="rgba(240,98,146,.3)" stroke="#f06292" stroke-width="1"/>
+  <text x="614" y="528" fill="#6b7a8d" font-family="Fira Code,monospace" font-size="7">T19</text>
+
+  <!-- P7 Async -->
+  <text x="5" y="550" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="9" font-weight="600">P7 Async</text>
+  <rect x="274" y="543" width="63" height="14" rx="3" fill="rgba(107,122,141,.3)" stroke="#6b7a8d" stroke-width="1"/>
+  <text x="341" y="553" fill="#6b7a8d" font-family="Fira Code,monospace" font-size="7">T20</text>
+  <rect x="610" y="543" width="21" height="14" rx="3" fill="rgba(107,122,141,.3)" stroke="#6b7a8d" stroke-width="1"/>
+  <text x="635" y="553" fill="#6b7a8d" font-family="Fira Code,monospace" font-size="7">T21</text>
+
+  <!-- P8 Finition -->
+  <text x="5" y="570" fill="#ffd54f" font-family="Inter,sans-serif" font-size="9" font-weight="600">P8 Finition</text>
+  <rect x="631" y="560" width="42" height="14" rx="3" fill="rgba(255,213,79,.3)" stroke="#ffd54f" stroke-width="1"/>
+  <text x="677" y="570" fill="#6b7a8d" font-family="Fira Code,monospace" font-size="7">T22-T24</text>
+  <rect x="673" y="560" width="63" height="14" rx="3" fill="rgba(255,213,79,.25)" stroke="#ffd54f" stroke-width="1" stroke-dasharray="3,2"/>
+
+</svg>
+</div>
+
+<div class="box warn">
+  <span class="ic">⚡</span>
+  <div>
+    <b>Parallélisme possible</b>
+    Certaines tâches peuvent avancer en parallèle si tu découpes bien tes branches git : P3 (Orga) et P4 (Tickets) partagent la dépendance sur T4 (User model) mais sont indépendantes entre elles. P7 (Celery) peut démarrer dès T2 (Docker/Redis). Le chemin critique reste T1→T4→T5→T7→T8→T9→T12→T14→T19→T24.
+  </div>
+</div>
+</section>
+
+<!-- =====================================================
+     ANNEXES
+     ===================================================== -->
+
+<!-- S17 : ENDPOINTS API -->
+<section id="api">
+<h2>17. Endpoints API</h2>
+
+<p>Tous les endpoints sont préfixés par <code>/api/v1/</code>. L'authentification est requise sauf mention contraire.</p>
+
+<h3>17.1 — Auth</h3>
+<table>
+  <tr><th>Méthode</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr>
+  <tr><td><span class="fb g">POST</span></td><td><code>/auth/register/</code></td><td>Créer un compte</td><td>❌</td></tr>
+  <tr><td><span class="fb g">POST</span></td><td><code>/auth/login/</code></td><td>Obtenir access + refresh tokens</td><td>❌</td></tr>
+  <tr><td><span class="fb g">POST</span></td><td><code>/auth/refresh/</code></td><td>Renouveler l'access token</td><td>❌ (refresh token dans le body)</td></tr>
+  <tr><td><span class="fb g">POST</span></td><td><code>/auth/logout/</code></td><td>Blacklister le refresh token</td><td>✅</td></tr>
+  <tr><td><span class="fb a">GET</span></td><td><code>/auth/me/</code></td><td>Profil de l'utilisateur connecté</td><td>✅</td></tr>
+  <tr><td><span class="fb w">PATCH</span></td><td><code>/auth/me/</code></td><td>Modifier son profil</td><td>✅</td></tr>
+  <tr><td><span class="fb g">POST</span></td><td><code>/auth/change-password/</code></td><td>Changer son mot de passe</td><td>✅</td></tr>
+</table>
+
+<h3>17.2 — Organizations</h3>
+<table>
+  <tr><th>Méthode</th><th>Endpoint</th><th>Description</th><th>Rôle min.</th></tr>
+  <tr><td><span class="fb g">POST</span></td><td><code>/organizations/</code></td><td>Créer une organisation</td><td>Authentifié</td></tr>
+  <tr><td><span class="fb a">GET</span></td><td><code>/organizations/</code></td><td>Lister mes organisations</td><td>Authentifié</td></tr>
+  <tr><td><span class="fb a">GET</span></td><td><code>/organizations/{slug}/</code></td><td>Détail d'une organisation</td><td>Member</td></tr>
+  <tr><td><span class="fb w">PATCH</span></td><td><code>/organizations/{slug}/</code></td><td>Modifier les paramètres</td><td>Admin</td></tr>
+  <tr><td><span class="fb g">POST</span></td><td><code>/organizations/{slug}/invite/</code></td><td>Inviter un membre</td><td>Admin</td></tr>
+  <tr><td><span class="fb a">GET</span></td><td><code>/organizations/{slug}/members/</code></td><td>Lister les membres</td><td>Agent</td></tr>
+  <tr><td><span class="fb w">PATCH</span></td><td><code>/organizations/{slug}/members/{id}/</code></td><td>Changer le rôle</td><td>Admin</td></tr>
+  <tr><td><span class="fb d">DELETE</span></td><td><code>/organizations/{slug}/members/{id}/</code></td><td>Retirer un membre</td><td>Admin</td></tr>
+  <tr><td><span class="fb a">GET</span></td><td><code>/organizations/{slug}/dashboard/</code></td><td>Stats de l'organisation</td><td>Admin</td></tr>
+</table>
+
+<h3>17.3 — Tickets</h3>
+<table>
+  <tr><th>Méthode</th><th>Endpoint</th><th>Description</th><th>Rôle min.</th></tr>
+  <tr><td><span class="fb g">POST</span></td><td><code>/organizations/{slug}/tickets/</code></td><td>Créer un ticket</td><td>Member</td></tr>
+  <tr><td><span class="fb a">GET</span></td><td><code>/organizations/{slug}/tickets/</code></td><td>Lister les tickets (filtrage, tri, recherche)</td><td>Member *</td></tr>
+  <tr><td><span class="fb a">GET</span></td><td><code>/organizations/{slug}/tickets/{number}/</code></td><td>Détail d'un ticket</td><td>Member *</td></tr>
+  <tr><td><span class="fb w">PATCH</span></td><td><code>/organizations/{slug}/tickets/{number}/</code></td><td>Modifier un ticket</td><td>Member *</td></tr>
+  <tr><td><span class="fb w">PATCH</span></td><td><code>/organizations/{slug}/tickets/{number}/status/</code></td><td>Changer le statut (workflow)</td><td>Agent</td></tr>
+  <tr><td><span class="fb w">PATCH</span></td><td><code>/organizations/{slug}/tickets/{number}/assign/</code></td><td>Assigner un agent</td><td>Agent</td></tr>
+  <tr><td><span class="fb d">DELETE</span></td><td><code>/organizations/{slug}/tickets/{number}/</code></td><td>Soft delete</td><td>Admin</td></tr>
+</table>
+<p style="font-size:.78rem;color:var(--muted)">* Les clients ne voient que leurs propres tickets. Les agents/admins voient tous les tickets de l'orga.</p>
+
+<h3>17.4 — Comments</h3>
+<table>
+  <tr><th>Méthode</th><th>Endpoint</th><th>Description</th><th>Rôle min.</th></tr>
+  <tr><td><span class="fb g">POST</span></td><td><code>/organizations/{slug}/tickets/{number}/comments/</code></td><td>Ajouter un commentaire</td><td>Member *</td></tr>
+  <tr><td><span class="fb a">GET</span></td><td><code>/organizations/{slug}/tickets/{number}/comments/</code></td><td>Lister les commentaires</td><td>Member *</td></tr>
+  <tr><td><span class="fb w">PATCH</span></td><td><code>/organizations/{slug}/tickets/{number}/comments/{id}/</code></td><td>Modifier un commentaire</td><td>Auteur (15min)</td></tr>
+  <tr><td><span class="fb d">DELETE</span></td><td><code>/organizations/{slug}/tickets/{number}/comments/{id}/</code></td><td>Soft delete</td><td>Auteur ou Admin</td></tr>
+</table>
+
+<h3>17.5 — History</h3>
+<table>
+  <tr><th>Méthode</th><th>Endpoint</th><th>Description</th><th>Rôle min.</th></tr>
+  <tr><td><span class="fb a">GET</span></td><td><code>/organizations/{slug}/tickets/{number}/history/</code></td><td>Timeline du ticket</td><td>Member *</td></tr>
+</table>
+</section>
+
+<!-- S18 : ARCHITECTURE PROJET -->
+<section id="archi">
+<h2>18. Architecture du projet</h2>
+
+<h3>18.1 — Structure des fichiers</h3>
+<div class="file-tree">
+<span class="dir">ticketflow/</span><br>
+├── <span class="dir">config/</span><br>
+│   ├── <span class="hl">settings/</span><br>
+│   │   ├── <span class="file">base.py</span>          <span class="file"># settings communs</span><br>
+│   │   ├── <span class="file">development.py</span>   <span class="file"># DEBUG=True, sqlite ok</span><br>
+│   │   └── <span class="file">production.py</span>    <span class="file"># Gunicorn, Postgres, Redis</span><br>
+│   ├── <span class="file">urls.py</span>              <span class="file"># Router racine → /api/v1/</span><br>
+│   ├── <span class="file">celery.py</span>            <span class="file"># Config Celery</span><br>
+│   └── <span class="file">wsgi.py</span><br>
+├── <span class="dir">apps/</span><br>
+│   ├── <span class="dir">accounts/</span><br>
+│   │   ├── <span class="file">models.py</span>        <span class="file"># CustomUser (email-based)</span><br>
+│   │   ├── <span class="file">serializers.py</span><br>
+│   │   ├── <span class="file">views.py</span><br>
+│   │   ├── <span class="file">urls.py</span><br>
+│   │   └── <span class="file">tests/</span><br>
+│   ├── <span class="dir">organizations/</span><br>
+│   │   ├── <span class="file">models.py</span>        <span class="file"># Organization, Membership</span><br>
+│   │   ├── <span class="file">services.py</span>      <span class="file"># OrgService (invite, manage)</span><br>
+│   │   ├── <span class="file">permissions.py</span>   <span class="file"># IsOrgAdmin, IsOrgMember</span><br>
+│   │   ├── <span class="file">serializers.py</span><br>
+│   │   ├── <span class="file">views.py</span><br>
+│   │   ├── <span class="file">urls.py</span><br>
+│   │   └── <span class="file">tests/</span><br>
+│   └── <span class="dir">tickets/</span><br>
+│       ├── <span class="file">models.py</span>        <span class="file"># Ticket, Comment, TicketHistory</span><br>
+│       ├── <span class="file">services.py</span>      <span class="file"># TicketService (create, transition, assign)</span><br>
+│       ├── <span class="file">state_machine.py</span> <span class="file"># TRANSITIONS dict + validate()</span><br>
+│       ├── <span class="file">permissions.py</span>   <span class="file"># IsTicketOwnerOrAgent</span><br>
+│       ├── <span class="file">filters.py</span>       <span class="file"># TicketFilter (django-filter)</span><br>
+│       ├── <span class="file">serializers.py</span><br>
+│       ├── <span class="file">views.py</span><br>
+│       ├── <span class="file">urls.py</span><br>
+│       ├── <span class="file">tasks.py</span>         <span class="file"># Celery: notifications, auto-close</span><br>
+│       └── <span class="file">tests/</span><br>
+│           ├── <span class="file">test_models.py</span><br>
+│           ├── <span class="file">test_services.py</span><br>
+│           ├── <span class="file">test_views.py</span><br>
+│           ├── <span class="file">test_permissions.py</span><br>
+│           └── <span class="file">test_isolation.py</span>  <span class="file"># Tests multi-tenant</span><br>
+├── <span class="file">manage.py</span><br>
+├── <span class="file">Dockerfile</span><br>
+├── <span class="file">docker-compose.yml</span><br>
+├── <span class="file">requirements.txt</span><br>
+├── <span class="file">pytest.ini</span><br>
+├── <span class="file">.env.example</span><br>
+├── <span class="file">.github/workflows/ci.yml</span><br>
+└── <span class="file">README.md</span>
+</div>
+
+<h3>18.2 — Architecture en couches</h3>
+<div class="flow">
+  <span class="fb a">Client HTTP</span>
+  <span class="fa">&rarr;</span>
+  <span class="fb p">DRF View</span>
+  <span class="fa">&rarr;</span>
+  <span class="fb" style="border-color:var(--purple);color:var(--purple)">Serializer</span>
+  <span class="fa">&rarr;</span>
+  <span class="fb g">Service Layer</span>
+  <span class="fa">&rarr;</span>
+  <span class="fb w">ORM (Models)</span>
+  <span class="fa">&rarr;</span>
+  <span class="fb" style="border-color:var(--muted);color:var(--muted)">PostgreSQL</span>
+</div>
+
+<div class="box good">
+  <span class="ic">✅</span>
+  <div>
+    <b>Principe directeur</b>
+    Les Views sont thin : elles délèguent au Service Layer. Les Models sont thin : ils déclarent le schéma et les managers custom. Toute la logique métier (validation de transition, génération de numéro, notification) vit dans le Service Layer. C'est le pattern enseigné dans le M6 du cours Django.
+  </div>
+</div>
+
+<h3>18.3 — Multi-tenant : stratégie d'isolation</h3>
+
+<div class="box warn">
+  <span class="ic">🏢</span>
+  <div>
+    <b>Shared Database, Shared Schema</b>
+    Toutes les organisations partagent la même base de données et les mêmes tables. L'isolation est garantie par le filtrage ORM : chaque QuerySet est filtré par <code>organization_id</code>. C'est la stratégie la plus simple à implémenter et suffisante pour une application de cette échelle. L'alternative (schéma par tenant ou DB par tenant) est overkill ici.
+  </div>
+</div>
+
+<p>Chaque vue qui manipule des données tenant-scoped récupère l'organisation depuis l'URL (<code>{slug}</code>) et la passe au service layer, qui l'injecte dans tous les QuerySets :</p>
+
+<pre><code><span class="cm"># Dans chaque service</span>
+<span class="kw">def</span> <span class="fn">list_tickets</span>(*, organization: Organization, ...) -> QuerySet:
+    <span class="kw">return</span> Ticket.objects.filter(
+        organization=organization,
+        is_deleted=<span class="nu">False</span>
+    )</code></pre>
+
+</section>
+
+</div><!-- /main -->
+
+<script>
+// Sidebar active state
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('#sidebar nav a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if(window.scrollY >= s.offsetTop - 100) current = s.id;
+  });
+  navLinks.forEach(a => {
+    a.classList.remove('active');
+    if(a.getAttribute('href') === '#' + current) a.classList.add('active');
+  });
+});
+
+// Hint toggle
+document.querySelectorAll('.hint').forEach(h => {
+  h.addEventListener('click', () => h.classList.toggle('open'));
+});
+</script>
+
+</body>
+</html>

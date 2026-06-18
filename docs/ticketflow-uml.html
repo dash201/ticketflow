@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TicketFlow — Analyse UML</title>
+<style>
+:root {
+  --bg:#0a0e14; --bg2:#131820; --bg3:#1a2030; --border:#2a3545;
+  --text:#d4dce8; --muted:#6b7a8d; --accent:#4fc3f7; --green:#66bb6a;
+  --warn:#ffa726; --danger:#ef5350; --purple:#ab7df6; --cyan:#26c6da;
+  --gold:#ffd54f; --pink:#f06292;
+  --mono:'Fira Code','Cascadia Code','JetBrains Mono',monospace;
+  --sans:'Inter','Segoe UI',system-ui,sans-serif; --r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.8}
+
+#sidebar{position:fixed;top:0;left:0;width:280px;height:100vh;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:1.2rem 0;z-index:100;scrollbar-width:thin}
+#sidebar .logo{padding:0 1.2rem 1.2rem;border-bottom:1px solid var(--border);margin-bottom:.8rem}
+#sidebar .logo h2{font-size:.9rem;color:var(--purple);font-weight:700}
+#sidebar .logo p{font-size:.7rem;color:var(--muted);margin-top:.2rem}
+#sidebar .logo a{font-size:.72rem;color:var(--accent);text-decoration:none;display:block;margin-top:.5rem}
+#sidebar .logo a:hover{text-decoration:underline}
+#sidebar nav a{display:block;padding:.4rem 1.2rem;color:var(--muted);text-decoration:none;font-size:.78rem;border-left:3px solid transparent;transition:.15s}
+#sidebar nav a:hover,#sidebar nav a.active{background:var(--bg3);color:var(--text);border-left-color:var(--purple)}
+#sidebar nav .ns{padding:.7rem 1.2rem .2rem;font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);opacity:.55}
+
+#main{margin-left:280px;padding:3rem 3.5rem;max-width:960px}
+section{margin-bottom:4rem;scroll-margin-top:2rem}
+
+h1{font-size:2.2rem;font-weight:800;background:linear-gradient(135deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.2;margin-bottom:.5rem}
+h2{font-size:1.45rem;font-weight:700;margin-bottom:1rem;padding-bottom:.5rem;border-bottom:2px solid var(--border);color:var(--text)}
+h3{font-size:1.05rem;font-weight:600;color:var(--accent);margin:1.6rem 0 .6rem}
+h4{font-size:.92rem;font-weight:600;color:var(--purple);margin:1.1rem 0 .35rem}
+p{margin-bottom:.8rem}
+
+pre{background:#060a10;border:1px solid var(--border);border-radius:var(--r);padding:1.1rem 1.3rem;overflow-x:auto;margin:.8rem 0 1.2rem;font-family:var(--mono);font-size:.8rem;line-height:1.65;position:relative}
+code{font-family:var(--mono);font-size:.83em;background:rgba(79,195,247,.1);color:var(--accent);padding:.1em .35em;border-radius:4px}
+pre code{background:none;color:inherit;padding:0;font-size:1em}
+
+.box{display:flex;gap:.9rem;padding:1rem 1.2rem;border-radius:var(--r);margin:1.2rem 0;border-left:4px solid;font-size:.88rem}
+.box .ic{font-size:1.05rem;flex-shrink:0;margin-top:.1rem}
+.box.info{background:rgba(79,195,247,.06);border-color:var(--accent)}
+.box.warn{background:rgba(255,167,38,.07);border-color:var(--warn)}
+.box.danger{background:rgba(239,83,80,.07);border-color:var(--danger)}
+.box.good{background:rgba(102,187,106,.06);border-color:var(--green)}
+.box.brain{background:rgba(171,125,246,.07);border-color:var(--purple)}
+.box b{display:block;margin-bottom:.2rem}
+
+table{width:100%;border-collapse:collapse;font-size:.83rem;margin:.8rem 0 1.2rem}
+th{background:var(--bg3);color:var(--muted);font-weight:600;text-align:left;padding:.55rem .9rem;border-bottom:2px solid var(--border);font-size:.72rem;letter-spacing:.05em;text-transform:uppercase}
+td{padding:.5rem .9rem;border-bottom:1px solid var(--border);vertical-align:top}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+.hero{padding:1.5rem 0 2.5rem;border-bottom:1px solid var(--border);margin-bottom:3rem}
+.hero .sub{font-size:1rem;color:var(--muted);margin-top:.4rem;max-width:600px}
+
+/* UML Diagram styles */
+.uml-diagram{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;margin:1.2rem 0;overflow-x:auto}
+.uml-diagram svg{display:block;margin:0 auto}
+.uml-title{text-align:center;font-size:.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem}
+
+/* Workflow states */
+.wf-state{padding:.4rem .9rem;border-radius:6px;font-size:.78rem;font-weight:600;text-align:center;display:inline-block}
+.wf-new{background:rgba(79,195,247,.15);color:var(--accent);border:1px solid var(--accent)}
+.wf-open{background:rgba(102,187,106,.15);color:var(--green);border:1px solid var(--green)}
+.wf-pending{background:rgba(255,167,38,.15);color:var(--warn);border:1px solid var(--warn)}
+.wf-resolved{background:rgba(171,125,246,.15);color:var(--purple);border:1px solid var(--purple)}
+.wf-closed{background:rgba(107,122,141,.15);color:var(--muted);border:1px solid var(--muted)}
+
+.seq-desc{font-size:.82rem;color:var(--muted);margin:.5rem 0}
+
+.kw{color:#ff7b72}.st{color:#a5d6ff}.cm{color:#6b7a8d;font-style:italic}
+.fn{color:#d2a8ff}.cl{color:#ffa657}.nu{color:#79c0ff}
+
+/* Responsive */
+@media(max-width:768px){
+  #sidebar{display:none}
+  #main{margin-left:0;padding:1.5rem 1.2rem}
+  h1{font-size:1.6rem}
+}
+
+/* Print A4 */
+@media print{
+  @page{size:A4;margin:18mm 15mm}
+  #sidebar{display:none}
+  #main{margin-left:0;padding:0;max-width:100%}
+  body{background:#fff;color:#1a1a1a;font-size:11pt}
+  .box{break-inside:avoid;border:1px solid #ccc}
+  h2{break-after:avoid;border-color:#999}
+  section{break-inside:avoid}
+  .uml-diagram{break-inside:avoid}
+  table{page-break-inside:avoid}
+  th{background:#eee;color:#333;border-color:#999}
+  td{border-color:#ccc}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ SIDEBAR ============ -->
+<div id="sidebar">
+  <div class="logo">
+    <h2>TicketFlow</h2>
+    <p>Analyse UML</p>
+    <a href="ticketflow-cdc.html">&rarr; Cahier des Charges</a>
+    <a href="ticketflow-mcd.html">&rarr; MCD / MLD</a>
+    <a href="index.html">&larr; Retour au cours Django</a>
+  </div>
+  <nav>
+    <div class="ns">Diagrammes UML</div>
+    <a href="#uml-uc">1. Cas d'utilisation</a>
+    <a href="#uml-classes">2. Diagramme de classes</a>
+    <a href="#uml-seq">3. Diagrammes de séquence</a>
+    <a href="#uml-etats">4. Diagramme d'états</a>
+    <a href="#uml-activites">5. Diagrammes d'activité</a>
+  </nav>
+</div>
+
+<!-- ============ MAIN ============ -->
+<div id="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>TicketFlow — Analyse UML</h1>
+  <p class="sub">Diagrammes de cas d'utilisation, de classes, de séquence, d'états-transitions et d'activité pour le système de support client multi-tenant.</p>
+  <p style="font-size:.78rem;color:var(--muted);margin-top:.6rem">Voir aussi : <a href="ticketflow-cdc.html" style="color:var(--accent)">Cahier des Charges</a> · <a href="ticketflow-mcd.html" style="color:var(--accent)">MCD / MLD</a></p>
+</div>
+
+<!-- ===== S1 : CAS D'UTILISATION ===== -->
+<section id="uml-uc">
+<h2>1. Diagramme de cas d'utilisation</h2>
+
+<div class="uml-diagram">
+<div class="uml-title">Diagramme de cas d'utilisation — TicketFlow</div>
+<svg viewBox="0 0 900 620" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:900px">
+  <!-- System boundary -->
+  <rect x="200" y="20" width="500" height="580" rx="12" fill="none" stroke="#2a3545" stroke-width="2" stroke-dasharray="8,4"/>
+  <text x="450" y="50" text-anchor="middle" fill="#ab7df6" font-family="Inter,sans-serif" font-size="14" font-weight="700">TicketFlow API</text>
+
+  <!-- Client -->
+  <circle cx="70" cy="150" r="18" fill="none" stroke="#ffa726" stroke-width="2"/>
+  <line x1="70" y1="168" x2="70" y2="210" stroke="#ffa726" stroke-width="2"/>
+  <line x1="45" y1="185" x2="95" y2="185" stroke="#ffa726" stroke-width="2"/>
+  <line x1="70" y1="210" x2="50" y2="240" stroke="#ffa726" stroke-width="2"/>
+  <line x1="70" y1="210" x2="90" y2="240" stroke="#ffa726" stroke-width="2"/>
+  <text x="70" y="260" text-anchor="middle" fill="#ffa726" font-family="Inter,sans-serif" font-size="12" font-weight="600">Client</text>
+
+  <!-- Agent -->
+  <circle cx="70" cy="370" r="18" fill="none" stroke="#4fc3f7" stroke-width="2"/>
+  <line x1="70" y1="388" x2="70" y2="430" stroke="#4fc3f7" stroke-width="2"/>
+  <line x1="45" y1="405" x2="95" y2="405" stroke="#4fc3f7" stroke-width="2"/>
+  <line x1="70" y1="430" x2="50" y2="460" stroke="#4fc3f7" stroke-width="2"/>
+  <line x1="70" y1="430" x2="90" y2="460" stroke="#4fc3f7" stroke-width="2"/>
+  <text x="70" y="480" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="12" font-weight="600">Agent</text>
+
+  <!-- Admin -->
+  <circle cx="830" cy="260" r="18" fill="none" stroke="#66bb6a" stroke-width="2"/>
+  <line x1="830" y1="278" x2="830" y2="320" stroke="#66bb6a" stroke-width="2"/>
+  <line x1="805" y1="295" x2="855" y2="295" stroke="#66bb6a" stroke-width="2"/>
+  <line x1="830" y1="320" x2="810" y2="350" stroke="#66bb6a" stroke-width="2"/>
+  <line x1="830" y1="320" x2="850" y2="350" stroke="#66bb6a" stroke-width="2"/>
+  <text x="830" y="370" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="12" font-weight="600">Admin</text>
+
+  <!-- Système -->
+  <rect x="790" y="480" width="80" height="35" rx="4" fill="none" stroke="#6b7a8d" stroke-width="1.5"/>
+  <text x="830" y="502" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="11">Système</text>
+
+  <!-- Use Cases -->
+  <ellipse cx="370" cy="85" rx="90" ry="22" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="370" y="90" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="11">S'inscrire / Se connecter</text>
+
+  <ellipse cx="380" cy="150" rx="80" ry="22" fill="rgba(255,167,38,.08)" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="380" y="155" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="11">Créer un ticket</text>
+
+  <ellipse cx="380" cy="210" rx="85" ry="22" fill="rgba(255,167,38,.08)" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="380" y="215" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="11">Consulter ses tickets</text>
+
+  <ellipse cx="380" cy="270" rx="85" ry="22" fill="rgba(171,125,246,.08)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="380" y="275" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="11">Commenter un ticket</text>
+
+  <ellipse cx="450" cy="340" rx="90" ry="22" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="450" y="345" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="11">Changer le statut</text>
+
+  <ellipse cx="450" cy="400" rx="85" ry="22" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="450" y="405" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="11">Assigner un ticket</text>
+
+  <ellipse cx="450" cy="460" rx="100" ry="22" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="450" y="465" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="11">Voir tous les tickets (orga)</text>
+
+  <ellipse cx="550" cy="210" rx="85" ry="22" fill="rgba(102,187,106,.08)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="550" y="215" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="11">Gérer les membres</text>
+
+  <ellipse cx="550" cy="150" rx="80" ry="22" fill="rgba(102,187,106,.08)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="550" y="155" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="11">Créer une orga</text>
+
+  <ellipse cx="550" cy="270" rx="80" ry="22" fill="rgba(102,187,106,.08)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="550" y="275" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="11">Dashboard stats</text>
+
+  <ellipse cx="500" cy="540" rx="90" ry="22" fill="rgba(107,122,141,.08)" stroke="#6b7a8d" stroke-width="1.5"/>
+  <text x="500" y="545" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="11">Envoyer notifications</text>
+
+  <!-- Lines: Client -->
+  <line x1="95" y1="150" x2="290" y2="92" stroke="#ffa726" stroke-width="1" opacity=".5"/>
+  <line x1="95" y1="160" x2="300" y2="150" stroke="#ffa726" stroke-width="1" opacity=".5"/>
+  <line x1="95" y1="175" x2="295" y2="210" stroke="#ffa726" stroke-width="1" opacity=".5"/>
+  <line x1="95" y1="195" x2="295" y2="270" stroke="#ffa726" stroke-width="1" opacity=".5"/>
+
+  <!-- Lines: Agent -->
+  <line x1="95" y1="360" x2="290" y2="92" stroke="#4fc3f7" stroke-width="1" opacity=".5"/>
+  <line x1="95" y1="365" x2="300" y2="150" stroke="#4fc3f7" stroke-width="1" opacity=".5"/>
+  <line x1="95" y1="370" x2="295" y2="270" stroke="#4fc3f7" stroke-width="1" opacity=".5"/>
+  <line x1="95" y1="380" x2="360" y2="340" stroke="#4fc3f7" stroke-width="1" opacity=".5"/>
+  <line x1="95" y1="400" x2="365" y2="400" stroke="#4fc3f7" stroke-width="1" opacity=".5"/>
+  <line x1="95" y1="420" x2="350" y2="460" stroke="#4fc3f7" stroke-width="1" opacity=".5"/>
+
+  <!-- Lines: Admin -->
+  <line x1="805" y1="260" x2="635" y2="210" stroke="#66bb6a" stroke-width="1" opacity=".5"/>
+  <line x1="805" y1="250" x2="630" y2="150" stroke="#66bb6a" stroke-width="1" opacity=".5"/>
+  <line x1="805" y1="270" x2="630" y2="270" stroke="#66bb6a" stroke-width="1" opacity=".5"/>
+  <line x1="805" y1="280" x2="540" y2="340" stroke="#66bb6a" stroke-width="1" opacity=".5"/>
+  <line x1="805" y1="290" x2="535" y2="400" stroke="#66bb6a" stroke-width="1" opacity=".5"/>
+  <line x1="805" y1="300" x2="550" y2="460" stroke="#66bb6a" stroke-width="1" opacity=".5"/>
+  <line x1="805" y1="310" x2="465" y2="270" stroke="#66bb6a" stroke-width="1" opacity=".5"/>
+
+  <!-- Lines: Système -->
+  <line x1="795" y1="497" x2="590" y2="540" stroke="#6b7a8d" stroke-width="1" opacity=".5"/>
+</svg>
+</div>
+
+<div class="box info">
+  <span class="ic">📐</span>
+  <div>
+    <b>Lecture du diagramme</b>
+    Les couleurs correspondent aux acteurs : <span style="color:var(--warn)">orange = Client</span>, <span style="color:var(--accent)">bleu = Agent</span>, <span style="color:var(--green)">vert = Admin</span>, <span style="color:var(--muted)">gris = Système</span>. L'Admin hérite de toutes les capacités de l'Agent (il peut tout faire). Détail des acteurs et permissions dans le <a href="ticketflow-cdc.html#acteurs" style="color:var(--accent)">Cahier des Charges §3</a>.
+  </div>
+</div>
+</section>
+
+<!-- ===== S2 : DIAGRAMME DE CLASSES ===== -->
+<section id="uml-classes">
+<h2>2. Diagramme de classes</h2>
+
+<div class="uml-diagram">
+<div class="uml-title">Diagramme de classes — Modèle métier TicketFlow</div>
+<svg viewBox="0 0 920 780" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:920px">
+
+  <!-- CLASS: User -->
+  <rect x="20" y="20" width="240" height="200" rx="6" fill="#131820" stroke="#4fc3f7" stroke-width="2"/>
+  <rect x="20" y="20" width="240" height="32" rx="6" fill="rgba(79,195,247,.12)"/>
+  <text x="140" y="42" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="13" font-weight="700">User</text>
+  <line x1="20" y1="52" x2="260" y2="52" stroke="#2a3545" stroke-width="1"/>
+  <text x="32" y="72" fill="#ffd54f" font-family="Fira Code,monospace" font-size="10">🔑 id : UUID</text>
+  <text x="32" y="90" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   email : EmailField (unique)</text>
+  <text x="32" y="108" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   first_name : CharField</text>
+  <text x="32" y="126" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   last_name : CharField</text>
+  <text x="32" y="144" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   is_active : BooleanField</text>
+  <text x="32" y="162" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   date_joined : DateTimeField</text>
+  <line x1="20" y1="172" x2="260" y2="172" stroke="#2a3545" stroke-width="1"/>
+  <text x="32" y="192" fill="#d2a8ff" font-family="Fira Code,monospace" font-size="10">+ get_orgs() : QuerySet</text>
+  <text x="32" y="210" fill="#d2a8ff" font-family="Fira Code,monospace" font-size="10">+ get_role(org) : str</text>
+
+  <!-- CLASS: Organization -->
+  <rect x="340" y="20" width="250" height="220" rx="6" fill="#131820" stroke="#66bb6a" stroke-width="2"/>
+  <rect x="340" y="20" width="250" height="32" rx="6" fill="rgba(102,187,106,.12)"/>
+  <text x="465" y="42" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="13" font-weight="700">Organization</text>
+  <line x1="340" y1="52" x2="590" y2="52" stroke="#2a3545" stroke-width="1"/>
+  <text x="352" y="72" fill="#ffd54f" font-family="Fira Code,monospace" font-size="10">🔑 id : UUID</text>
+  <text x="352" y="90" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   name : CharField</text>
+  <text x="352" y="108" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   slug : SlugField (unique)</text>
+  <text x="352" y="126" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   owner : FK → User</text>
+  <text x="352" y="144" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   auto_assign : BooleanField</text>
+  <text x="352" y="162" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   created_at : DateTimeField</text>
+  <text x="352" y="180" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   updated_at : DateTimeField</text>
+  <line x1="340" y1="190" x2="590" y2="190" stroke="#2a3545" stroke-width="1"/>
+  <text x="352" y="210" fill="#d2a8ff" font-family="Fira Code,monospace" font-size="10">+ get_agents() : QuerySet</text>
+  <text x="352" y="228" fill="#d2a8ff" font-family="Fira Code,monospace" font-size="10">+ next_ticket_number() : int</text>
+
+  <!-- CLASS: Membership -->
+  <rect x="160" y="290" width="250" height="160" rx="6" fill="#131820" stroke="#ab7df6" stroke-width="2"/>
+  <rect x="160" y="290" width="250" height="32" rx="6" fill="rgba(171,125,246,.12)"/>
+  <text x="285" y="312" text-anchor="middle" fill="#ab7df6" font-family="Inter,sans-serif" font-size="13" font-weight="700">Membership</text>
+  <line x1="160" y1="322" x2="410" y2="322" stroke="#2a3545" stroke-width="1"/>
+  <text x="172" y="342" fill="#ffd54f" font-family="Fira Code,monospace" font-size="10">🔑 id : UUID</text>
+  <text x="172" y="360" fill="#f06292" font-family="Fira Code,monospace" font-size="10">   user : FK → User</text>
+  <text x="172" y="378" fill="#f06292" font-family="Fira Code,monospace" font-size="10">   organization : FK → Organization</text>
+  <text x="172" y="396" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   role : ENUM(ADMIN,AGENT,CLIENT)</text>
+  <text x="172" y="414" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   joined_at : DateTimeField</text>
+  <line x1="160" y1="424" x2="410" y2="424" stroke="#2a3545" stroke-width="1"/>
+  <text x="172" y="442" fill="#6b7a8d" font-family="Fira Code,monospace" font-size="10">   «unique_together: user, org»</text>
+
+  <!-- CLASS: Ticket -->
+  <rect x="500" y="290" width="260" height="280" rx="6" fill="#131820" stroke="#ffa726" stroke-width="2"/>
+  <rect x="500" y="290" width="260" height="32" rx="6" fill="rgba(255,167,38,.12)"/>
+  <text x="630" y="312" text-anchor="middle" fill="#ffa726" font-family="Inter,sans-serif" font-size="13" font-weight="700">Ticket</text>
+  <line x1="500" y1="322" x2="760" y2="322" stroke="#2a3545" stroke-width="1"/>
+  <text x="512" y="342" fill="#ffd54f" font-family="Fira Code,monospace" font-size="10">🔑 id : UUID</text>
+  <text x="512" y="360" fill="#f06292" font-family="Fira Code,monospace" font-size="10">   organization : FK → Organization</text>
+  <text x="512" y="378" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   number : IntegerField</text>
+  <text x="512" y="396" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   subject : CharField(255)</text>
+  <text x="512" y="414" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   description : TextField</text>
+  <text x="512" y="432" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   status : ENUM(NEW,OPEN,PENDING,</text>
+  <text x="512" y="446" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">            RESOLVED,CLOSED)</text>
+  <text x="512" y="462" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   priority : ENUM(LOW,MED,HIGH,URG)</text>
+  <text x="512" y="480" fill="#f06292" font-family="Fira Code,monospace" font-size="10">   created_by : FK → User</text>
+  <text x="512" y="498" fill="#f06292" font-family="Fira Code,monospace" font-size="10">   assigned_to : FK → User (nullable)</text>
+  <text x="512" y="516" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   created_at : DateTimeField</text>
+  <text x="512" y="534" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   updated_at : DateTimeField</text>
+  <text x="512" y="552" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   is_deleted : BooleanField</text>
+  <line x1="500" y1="558" x2="760" y2="558" stroke="#2a3545" stroke-width="1"/>
+
+  <!-- CLASS: Comment -->
+  <rect x="20" y="520" width="240" height="180" rx="6" fill="#131820" stroke="#26c6da" stroke-width="2"/>
+  <rect x="20" y="520" width="240" height="32" rx="6" fill="rgba(38,198,218,.12)"/>
+  <text x="140" y="542" text-anchor="middle" fill="#26c6da" font-family="Inter,sans-serif" font-size="13" font-weight="700">Comment</text>
+  <line x1="20" y1="552" x2="260" y2="552" stroke="#2a3545" stroke-width="1"/>
+  <text x="32" y="572" fill="#ffd54f" font-family="Fira Code,monospace" font-size="10">🔑 id : UUID</text>
+  <text x="32" y="590" fill="#f06292" font-family="Fira Code,monospace" font-size="10">   ticket : FK → Ticket</text>
+  <text x="32" y="608" fill="#f06292" font-family="Fira Code,monospace" font-size="10">   author : FK → User</text>
+  <text x="32" y="626" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   body : TextField</text>
+  <text x="32" y="644" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   is_internal : BooleanField</text>
+  <text x="32" y="662" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   created_at : DateTimeField</text>
+  <text x="32" y="680" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   is_deleted : BooleanField</text>
+  <line x1="20" y1="688" x2="260" y2="688" stroke="#2a3545" stroke-width="1"/>
+
+  <!-- CLASS: TicketHistory -->
+  <rect x="580" y="620" width="260" height="150" rx="6" fill="#131820" stroke="#f06292" stroke-width="2"/>
+  <rect x="580" y="620" width="260" height="32" rx="6" fill="rgba(240,98,146,.12)"/>
+  <text x="710" y="642" text-anchor="middle" fill="#f06292" font-family="Inter,sans-serif" font-size="13" font-weight="700">TicketHistory</text>
+  <line x1="580" y1="652" x2="840" y2="652" stroke="#2a3545" stroke-width="1"/>
+  <text x="592" y="672" fill="#ffd54f" font-family="Fira Code,monospace" font-size="10">🔑 id : UUID</text>
+  <text x="592" y="690" fill="#f06292" font-family="Fira Code,monospace" font-size="10">   ticket : FK → Ticket</text>
+  <text x="592" y="708" fill="#f06292" font-family="Fira Code,monospace" font-size="10">   changed_by : FK → User</text>
+  <text x="592" y="726" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   field : CharField</text>
+  <text x="592" y="744" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   old_value : CharField (nullable)</text>
+  <text x="592" y="762" fill="#d4dce8" font-family="Fira Code,monospace" font-size="10">   new_value : CharField</text>
+  <line x1="580" y1="768" x2="840" y2="768" stroke="#2a3545" stroke-width="1"/>
+
+  <!-- RELATIONS -->
+  <line x1="140" y1="220" x2="230" y2="290" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="160" y="255" fill="#ab7df6" font-family="Inter,sans-serif" font-size="10">1..*</text>
+  <text x="215" y="285" fill="#ab7df6" font-family="Inter,sans-serif" font-size="10">*</text>
+
+  <line x1="465" y1="240" x2="360" y2="290" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="420" y="255" fill="#ab7df6" font-family="Inter,sans-serif" font-size="10">1..*</text>
+  <text x="365" y="285" fill="#ab7df6" font-family="Inter,sans-serif" font-size="10">*</text>
+
+  <line x1="590" y1="200" x2="630" y2="290" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="595" y="240" fill="#ffa726" font-family="Inter,sans-serif" font-size="10">1</text>
+  <text x="625" y="285" fill="#ffa726" font-family="Inter,sans-serif" font-size="10">*</text>
+
+  <line x1="500" y1="500" x2="260" y2="580" stroke="#26c6da" stroke-width="1.5"/>
+  <text x="390" y="530" fill="#26c6da" font-family="Inter,sans-serif" font-size="10">1</text>
+  <text x="270" y="575" fill="#26c6da" font-family="Inter,sans-serif" font-size="10">*</text>
+
+  <line x1="660" y1="570" x2="680" y2="620" stroke="#f06292" stroke-width="1.5"/>
+  <text x="650" y="590" fill="#f06292" font-family="Inter,sans-serif" font-size="10">1</text>
+  <text x="680" y="618" fill="#f06292" font-family="Inter,sans-serif" font-size="10">*</text>
+
+  <line x1="80" y1="220" x2="100" y2="520" stroke="#26c6da" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="260" y1="160" x2="500" y2="480" stroke="#ffa726" stroke-width="1" stroke-dasharray="4,3"/>
+</svg>
+</div>
+
+<h3>Légende des relations</h3>
+<table>
+  <tr><th>Relation</th><th>Type</th><th>Cardinalité</th><th>Description</th></tr>
+  <tr><td>User ↔ Organization</td><td>Many-to-Many via Membership</td><td>N:M</td><td>Un user peut être dans plusieurs orgas, une orga a plusieurs users</td></tr>
+  <tr><td>Organization → Ticket</td><td>One-to-Many</td><td>1:N</td><td>Une orga a N tickets, un ticket appartient à une seule orga</td></tr>
+  <tr><td>User → Ticket (created_by)</td><td>One-to-Many</td><td>1:N</td><td>Un user crée N tickets</td></tr>
+  <tr><td>User → Ticket (assigned_to)</td><td>One-to-Many (nullable)</td><td>0..1:N</td><td>Un agent peut être assigné à N tickets</td></tr>
+  <tr><td>Ticket → Comment</td><td>One-to-Many</td><td>1:N</td><td>Un ticket a N commentaires</td></tr>
+  <tr><td>Ticket → TicketHistory</td><td>One-to-Many</td><td>1:N</td><td>Un ticket a N entrées d'historique</td></tr>
+  <tr><td>User → Comment (author)</td><td>One-to-Many</td><td>1:N</td><td>Un user écrit N commentaires</td></tr>
+  <tr><td>User → TicketHistory (changed_by)</td><td>One-to-Many</td><td>1:N</td><td>Un user fait N changements</td></tr>
+</table>
+</section>
+
+<!-- ===== S3 : DIAGRAMMES DE SÉQUENCE ===== -->
+<section id="uml-seq">
+<h2>3. Diagrammes de séquence</h2>
+
+<h3>3.1 — Créer un ticket (US-04)</h3>
+<p class="seq-desc">Le client authentifié crée un ticket dans son organisation. Le système génère un numéro séquentiel, enregistre l'historique et notifie les agents via Celery.</p>
+<div class="uml-diagram">
+<div class="uml-title">Séquence — Création d'un ticket par un client</div>
+<svg viewBox="0 0 820 400" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px">
+  <defs>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#d4dce8"/>
+    </marker>
+  </defs>
+
+  <!-- Lifelines -->
+  <rect x="50" y="20" width="90" height="30" rx="4" fill="rgba(255,167,38,.12)" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="95" y="40" text-anchor="middle" fill="#ffa726" font-family="Inter,sans-serif" font-size="11" font-weight="600">Client</text>
+  <line x1="95" y1="50" x2="95" y2="380" stroke="#ffa726" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="205" y="20" width="90" height="30" rx="4" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="250" y="40" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="11" font-weight="600">API View</text>
+  <line x1="250" y1="50" x2="250" y2="380" stroke="#4fc3f7" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="370" y="20" width="100" height="30" rx="4" fill="rgba(171,125,246,.12)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="420" y="40" text-anchor="middle" fill="#ab7df6" font-family="Inter,sans-serif" font-size="11" font-weight="600">TicketService</text>
+  <line x1="420" y1="50" x2="420" y2="380" stroke="#ab7df6" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="530" y="20" width="80" height="30" rx="4" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="570" y="40" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="11" font-weight="600">DB (ORM)</text>
+  <line x1="570" y1="50" x2="570" y2="380" stroke="#66bb6a" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="680" y="20" width="80" height="30" rx="4" fill="rgba(107,122,141,.12)" stroke="#6b7a8d" stroke-width="1.5"/>
+  <text x="720" y="40" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="11" font-weight="600">Celery</text>
+  <line x1="720" y1="50" x2="720" y2="380" stroke="#6b7a8d" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <!-- Messages -->
+  <line x1="95" y1="85" x2="250" y2="85" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+  <text x="172" y="78" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">POST /api/v1/tickets/</text>
+
+  <rect x="230" y="95" width="40" height="30" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="175" y="115" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="9">Validate JWT + permissions + org membership</text>
+
+  <line x1="250" y1="140" x2="420" y2="140" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+  <text x="335" y="133" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">create_ticket(data, user, org)</text>
+
+  <line x1="420" y1="170" x2="570" y2="170" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+  <text x="495" y="163" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">next_ticket_number(org)</text>
+  <line x1="570" y1="185" x2="420" y2="185" stroke="#66bb6a" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowhead)"/>
+  <text x="495" y="200" text-anchor="middle" fill="#66bb6a" font-family="Fira Code,monospace" font-size="9">42</text>
+
+  <line x1="420" y1="220" x2="570" y2="220" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+  <text x="495" y="213" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">Ticket.objects.create(...)</text>
+  <line x1="570" y1="240" x2="420" y2="240" stroke="#66bb6a" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowhead)"/>
+  <text x="495" y="255" text-anchor="middle" fill="#66bb6a" font-family="Fira Code,monospace" font-size="9">ticket</text>
+
+  <line x1="420" y1="275" x2="570" y2="275" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+  <text x="495" y="268" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">TicketHistory.create(...)</text>
+
+  <line x1="420" y1="305" x2="720" y2="305" stroke="#6b7a8d" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrowhead)"/>
+  <text x="570" y="298" text-anchor="middle" fill="#6b7a8d" font-family="Fira Code,monospace" font-size="9">notify_new_ticket.delay(ticket_id)</text>
+
+  <line x1="420" y1="335" x2="250" y2="335" stroke="#ab7df6" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowhead)"/>
+  <text x="335" y="328" text-anchor="middle" fill="#ab7df6" font-family="Fira Code,monospace" font-size="9">ticket</text>
+
+  <line x1="250" y1="355" x2="95" y2="355" stroke="#4fc3f7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowhead)"/>
+  <text x="172" y="348" text-anchor="middle" fill="#4fc3f7" font-family="Fira Code,monospace" font-size="9">201 Created + ticket JSON</text>
+</svg>
+</div>
+
+<h3>3.2 — Changer le statut d'un ticket (US-06)</h3>
+<p class="seq-desc">L'agent demande une transition de statut. Le service délègue la validation à la machine à états avant de persister.</p>
+<div class="uml-diagram">
+<div class="uml-title">Séquence — Transition de statut par un agent</div>
+<svg viewBox="0 0 750 350" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:750px">
+  <defs>
+    <marker id="arr2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#d4dce8"/>
+    </marker>
+  </defs>
+
+  <rect x="40" y="20" width="80" height="30" rx="4" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="80" y="40" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="11" font-weight="600">Agent</text>
+  <line x1="80" y1="50" x2="80" y2="330" stroke="#4fc3f7" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="190" y="20" width="80" height="30" rx="4" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="230" y="40" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="11" font-weight="600">API View</text>
+  <line x1="230" y1="50" x2="230" y2="330" stroke="#4fc3f7" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="340" y="20" width="100" height="30" rx="4" fill="rgba(171,125,246,.12)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="390" y="40" text-anchor="middle" fill="#ab7df6" font-family="Inter,sans-serif" font-size="11" font-weight="600">TicketService</text>
+  <line x1="390" y1="50" x2="390" y2="330" stroke="#ab7df6" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="510" y="20" width="100" height="30" rx="4" fill="rgba(239,83,80,.12)" stroke="#ef5350" stroke-width="1.5"/>
+  <text x="560" y="40" text-anchor="middle" fill="#ef5350" font-family="Inter,sans-serif" font-size="11" font-weight="600">StateMachine</text>
+  <line x1="560" y1="50" x2="560" y2="330" stroke="#ef5350" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="660" y="20" width="60" height="30" rx="4" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="690" y="40" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="11" font-weight="600">DB</text>
+  <line x1="690" y1="50" x2="690" y2="330" stroke="#66bb6a" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <line x1="80" y1="85" x2="230" y2="85" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr2)"/>
+  <text x="155" y="78" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">PATCH /tickets/{id}/status/</text>
+
+  <line x1="230" y1="115" x2="390" y2="115" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr2)"/>
+  <text x="310" y="108" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">transition(ticket, new_status, user)</text>
+
+  <line x1="390" y1="145" x2="560" y2="145" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr2)"/>
+  <text x="475" y="138" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">validate(current, target, role)</text>
+
+  <rect x="520" y="160" width="130" height="25" rx="3" fill="rgba(102,187,106,.06)" stroke="#66bb6a" stroke-width="1"/>
+  <text x="585" y="177" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="9">[transition valide]</text>
+
+  <line x1="560" y1="195" x2="390" y2="195" stroke="#66bb6a" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr2)"/>
+  <text x="475" y="188" text-anchor="middle" fill="#66bb6a" font-family="Fira Code,monospace" font-size="9">✓ OK</text>
+
+  <line x1="390" y1="225" x2="690" y2="225" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr2)"/>
+  <text x="540" y="218" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">UPDATE ticket SET status + History</text>
+
+  <line x1="390" y1="265" x2="230" y2="265" stroke="#ab7df6" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr2)"/>
+  <text x="310" y="258" text-anchor="middle" fill="#ab7df6" font-family="Fira Code,monospace" font-size="9">updated ticket</text>
+
+  <line x1="230" y1="290" x2="80" y2="290" stroke="#4fc3f7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr2)"/>
+  <text x="155" y="283" text-anchor="middle" fill="#4fc3f7" font-family="Fira Code,monospace" font-size="9">200 OK + ticket JSON</text>
+
+  <text x="560" y="320" text-anchor="middle" fill="#ef5350" font-family="Inter,sans-serif" font-size="9">[transition invalide → 400 Bad Request]</text>
+</svg>
+</div>
+
+<h3>3.3 — S'inscrire (US-01)</h3>
+<p class="seq-desc">Un visiteur crée un compte avec email et mot de passe. L'API retourne une paire de tokens JWT (access + refresh).</p>
+<div class="uml-diagram">
+<div class="uml-title">Séquence — Inscription d'un utilisateur</div>
+<svg viewBox="0 0 700 340" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:700px">
+  <defs>
+    <marker id="arr3a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#d4dce8"/>
+    </marker>
+  </defs>
+
+  <rect x="40" y="20" width="90" height="30" rx="4" fill="rgba(255,167,38,.12)" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="85" y="40" text-anchor="middle" fill="#ffa726" font-family="Inter,sans-serif" font-size="11" font-weight="600">Visiteur</text>
+  <line x1="85" y1="50" x2="85" y2="320" stroke="#ffa726" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="210" y="20" width="90" height="30" rx="4" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="255" y="40" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="11" font-weight="600">API View</text>
+  <line x1="255" y1="50" x2="255" y2="320" stroke="#4fc3f7" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="380" y="20" width="100" height="30" rx="4" fill="rgba(171,125,246,.12)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="430" y="40" text-anchor="middle" fill="#ab7df6" font-family="Inter,sans-serif" font-size="11" font-weight="600">UserService</text>
+  <line x1="430" y1="50" x2="430" y2="320" stroke="#ab7df6" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="560" y="20" width="80" height="30" rx="4" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="600" y="40" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="11" font-weight="600">DB (ORM)</text>
+  <line x1="600" y1="50" x2="600" y2="320" stroke="#66bb6a" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <!-- Messages -->
+  <line x1="85" y1="85" x2="255" y2="85" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr3a)"/>
+  <text x="170" y="78" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">POST /api/v1/auth/register/</text>
+
+  <rect x="235" y="95" width="40" height="25" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="175" y="112" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="9">Validate email format + password strength</text>
+
+  <line x1="255" y1="135" x2="430" y2="135" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr3a)"/>
+  <text x="342" y="128" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">register(email, password, name)</text>
+
+  <line x1="430" y1="165" x2="600" y2="165" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr3a)"/>
+  <text x="515" y="158" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">User.objects.create_user(...)</text>
+
+  <line x1="600" y1="185" x2="430" y2="185" stroke="#66bb6a" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr3a)"/>
+  <text x="515" y="200" text-anchor="middle" fill="#66bb6a" font-family="Fira Code,monospace" font-size="9">user</text>
+
+  <rect x="410" y="210" width="40" height="25" fill="rgba(171,125,246,.08)" stroke="#ab7df6" stroke-width="1"/>
+  <text x="345" y="227" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="9">Generate JWT pair (access + refresh)</text>
+
+  <line x1="430" y1="250" x2="255" y2="250" stroke="#ab7df6" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr3a)"/>
+  <text x="342" y="243" text-anchor="middle" fill="#ab7df6" font-family="Fira Code,monospace" font-size="9">{user, tokens}</text>
+
+  <line x1="255" y1="280" x2="85" y2="280" stroke="#4fc3f7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr3a)"/>
+  <text x="170" y="273" text-anchor="middle" fill="#4fc3f7" font-family="Fira Code,monospace" font-size="9">201 {user, access, refresh}</text>
+
+  <text x="350" y="310" text-anchor="middle" fill="#ef5350" font-family="Inter,sans-serif" font-size="9">[email déjà pris → 400 Bad Request]</text>
+</svg>
+</div>
+
+<h3>3.4 — Créer une organisation (US-02)</h3>
+<p class="seq-desc">Un utilisateur authentifié crée une organisation. Il en devient automatiquement ADMIN via un Membership créé dans la même transaction.</p>
+<div class="uml-diagram">
+<div class="uml-title">Séquence — Création d'une organisation</div>
+<svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px">
+  <defs>
+    <marker id="arr4" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#d4dce8"/>
+    </marker>
+  </defs>
+
+  <rect x="40" y="20" width="90" height="30" rx="4" fill="rgba(255,167,38,.12)" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="85" y="40" text-anchor="middle" fill="#ffa726" font-family="Inter,sans-serif" font-size="11" font-weight="600">User</text>
+  <line x1="85" y1="50" x2="85" y2="360" stroke="#ffa726" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="210" y="20" width="90" height="30" rx="4" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="255" y="40" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="11" font-weight="600">API View</text>
+  <line x1="255" y1="50" x2="255" y2="360" stroke="#4fc3f7" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="380" y="20" width="100" height="30" rx="4" fill="rgba(171,125,246,.12)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="430" y="40" text-anchor="middle" fill="#ab7df6" font-family="Inter,sans-serif" font-size="11" font-weight="600">OrgService</text>
+  <line x1="430" y1="50" x2="430" y2="360" stroke="#ab7df6" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="560" y="20" width="80" height="30" rx="4" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="600" y="40" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="11" font-weight="600">DB (ORM)</text>
+  <line x1="600" y1="50" x2="600" y2="360" stroke="#66bb6a" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <line x1="85" y1="85" x2="255" y2="85" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr4)"/>
+  <text x="170" y="78" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">POST /api/v1/organizations/</text>
+
+  <rect x="235" y="95" width="40" height="25" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="170" y="112" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="9">Validate JWT + serialize data</text>
+
+  <line x1="255" y1="135" x2="430" y2="135" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr4)"/>
+  <text x="342" y="128" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">create_organization(data, user)</text>
+
+  <rect x="555" y="155" width="90" height="20" rx="3" fill="rgba(171,125,246,.06)" stroke="#ab7df6" stroke-width="1"/>
+  <text x="600" y="169" text-anchor="middle" fill="#ab7df6" font-family="Inter,sans-serif" font-size="8">@transaction.atomic</text>
+
+  <line x1="430" y1="185" x2="600" y2="185" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr4)"/>
+  <text x="515" y="178" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">Organization.objects.create(...)</text>
+
+  <line x1="600" y1="205" x2="430" y2="205" stroke="#66bb6a" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr4)"/>
+  <text x="515" y="220" text-anchor="middle" fill="#66bb6a" font-family="Fira Code,monospace" font-size="9">org</text>
+
+  <line x1="430" y1="240" x2="600" y2="240" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr4)"/>
+  <text x="515" y="233" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">Membership.create(user, org, ADMIN)</text>
+
+  <line x1="600" y1="260" x2="430" y2="260" stroke="#66bb6a" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr4)"/>
+  <text x="515" y="275" text-anchor="middle" fill="#66bb6a" font-family="Fira Code,monospace" font-size="9">membership</text>
+
+  <line x1="430" y1="300" x2="255" y2="300" stroke="#ab7df6" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr4)"/>
+  <text x="342" y="293" text-anchor="middle" fill="#ab7df6" font-family="Fira Code,monospace" font-size="9">{org, membership}</text>
+
+  <line x1="255" y1="330" x2="85" y2="330" stroke="#4fc3f7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr4)"/>
+  <text x="170" y="323" text-anchor="middle" fill="#4fc3f7" font-family="Fira Code,monospace" font-size="9">201 Created + org JSON</text>
+</svg>
+</div>
+
+<h3>3.5 — Inviter un membre (US-03)</h3>
+<p class="seq-desc">L'admin invite un utilisateur par email. Si l'utilisateur existe déjà, un Membership est créé directement. Sinon, une invitation par email est envoyée via Celery.</p>
+<div class="uml-diagram">
+<div class="uml-title">Séquence — Invitation d'un membre par un admin</div>
+<svg viewBox="0 0 820 420" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px">
+  <defs>
+    <marker id="arr5" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#d4dce8"/>
+    </marker>
+  </defs>
+
+  <rect x="40" y="20" width="80" height="30" rx="4" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="80" y="40" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="11" font-weight="600">Admin</text>
+  <line x1="80" y1="50" x2="80" y2="400" stroke="#66bb6a" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="190" y="20" width="90" height="30" rx="4" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="235" y="40" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="11" font-weight="600">API View</text>
+  <line x1="235" y1="50" x2="235" y2="400" stroke="#4fc3f7" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="360" y="20" width="110" height="30" rx="4" fill="rgba(171,125,246,.12)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="415" y="40" text-anchor="middle" fill="#ab7df6" font-family="Inter,sans-serif" font-size="11" font-weight="600">MemberService</text>
+  <line x1="415" y1="50" x2="415" y2="400" stroke="#ab7df6" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="540" y="20" width="80" height="30" rx="4" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="580" y="40" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="11" font-weight="600">DB (ORM)</text>
+  <line x1="580" y1="50" x2="580" y2="400" stroke="#66bb6a" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="690" y="20" width="80" height="30" rx="4" fill="rgba(107,122,141,.12)" stroke="#6b7a8d" stroke-width="1.5"/>
+  <text x="730" y="40" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="11" font-weight="600">Celery</text>
+  <line x1="730" y1="50" x2="730" y2="400" stroke="#6b7a8d" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <line x1="80" y1="85" x2="235" y2="85" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr5)"/>
+  <text x="157" y="78" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">POST /orgs/{slug}/members/invite/</text>
+
+  <rect x="215" y="95" width="40" height="25" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="155" y="112" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="9">Validate JWT + check ADMIN role</text>
+
+  <line x1="235" y1="135" x2="415" y2="135" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr5)"/>
+  <text x="325" y="128" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">invite_member(email, role, org)</text>
+
+  <line x1="415" y1="160" x2="580" y2="160" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr5)"/>
+  <text x="497" y="153" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">User.objects.filter(email=...)</text>
+
+  <line x1="580" y1="180" x2="415" y2="180" stroke="#66bb6a" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr5)"/>
+  <text x="497" y="195" text-anchor="middle" fill="#66bb6a" font-family="Fira Code,monospace" font-size="9">user | None</text>
+
+  <!-- Alt: user exists -->
+  <rect x="380" y="208" width="235" height="55" rx="3" fill="none" stroke="#66bb6a" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="390" y="220" fill="#66bb6a" font-family="Inter,sans-serif" font-size="8" font-weight="600">[user existe]</text>
+  <line x1="415" y1="235" x2="580" y2="235" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr5)"/>
+  <text x="497" y="228" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">Membership.create(user, org, role)</text>
+  <line x1="580" y1="250" x2="415" y2="250" stroke="#66bb6a" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr5)"/>
+
+  <!-- Alt: user doesn't exist -->
+  <rect x="380" y="270" width="380" height="55" rx="3" fill="none" stroke="#ffa726" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="390" y="282" fill="#ffa726" font-family="Inter,sans-serif" font-size="8" font-weight="600">[user n'existe pas]</text>
+  <line x1="415" y1="300" x2="730" y2="300" stroke="#6b7a8d" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr5)"/>
+  <text x="572" y="293" text-anchor="middle" fill="#6b7a8d" font-family="Fira Code,monospace" font-size="9">send_invitation_email.delay(email, org, role)</text>
+
+  <line x1="415" y1="345" x2="235" y2="345" stroke="#ab7df6" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr5)"/>
+  <text x="325" y="338" text-anchor="middle" fill="#ab7df6" font-family="Fira Code,monospace" font-size="9">{membership | invitation}</text>
+
+  <line x1="235" y1="370" x2="80" y2="370" stroke="#4fc3f7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr5)"/>
+  <text x="157" y="363" text-anchor="middle" fill="#4fc3f7" font-family="Fira Code,monospace" font-size="9">201 Created + member JSON</text>
+</svg>
+</div>
+
+<h3>3.6 — Lister et filtrer les tickets (US-05)</h3>
+<p class="seq-desc">L'agent consulte les tickets de son organisation avec filtres (statut, priorité, assignation), recherche textuelle et pagination.</p>
+<div class="uml-diagram">
+<div class="uml-title">Séquence — Liste paginée et filtrée des tickets</div>
+<svg viewBox="0 0 700 370" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:700px">
+  <defs>
+    <marker id="arr6" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#d4dce8"/>
+    </marker>
+  </defs>
+
+  <rect x="40" y="20" width="80" height="30" rx="4" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="80" y="40" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="11" font-weight="600">Agent</text>
+  <line x1="80" y1="50" x2="80" y2="350" stroke="#4fc3f7" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="195" y="20" width="90" height="30" rx="4" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="240" y="40" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="11" font-weight="600">API View</text>
+  <line x1="240" y1="50" x2="240" y2="350" stroke="#4fc3f7" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="370" y="20" width="100" height="30" rx="4" fill="rgba(171,125,246,.12)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="420" y="40" text-anchor="middle" fill="#ab7df6" font-family="Inter,sans-serif" font-size="11" font-weight="600">TicketService</text>
+  <line x1="420" y1="50" x2="420" y2="350" stroke="#ab7df6" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="555" y="20" width="80" height="30" rx="4" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="595" y="40" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="11" font-weight="600">DB (ORM)</text>
+  <line x1="595" y1="50" x2="595" y2="350" stroke="#66bb6a" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <line x1="80" y1="85" x2="240" y2="85" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr6)"/>
+  <text x="160" y="78" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">GET /tickets/?status=OPEN&amp;page=1</text>
+
+  <rect x="220" y="95" width="40" height="25" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="155" y="112" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="9">Validate JWT + parse query params</text>
+
+  <line x1="240" y1="140" x2="420" y2="140" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr6)"/>
+  <text x="330" y="133" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">list_tickets(org, filters)</text>
+
+  <line x1="420" y1="170" x2="595" y2="170" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr6)"/>
+  <text x="507" y="163" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">Ticket.objects.filter(...)</text>
+
+  <rect x="555" y="180" width="80" height="35" fill="rgba(102,187,106,.06)" stroke="#66bb6a" stroke-width="1"/>
+  <text x="595" y="195" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="8">Apply filters:</text>
+  <text x="595" y="207" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="8">status, priority, search</text>
+
+  <line x1="595" y1="225" x2="420" y2="225" stroke="#66bb6a" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr6)"/>
+  <text x="507" y="240" text-anchor="middle" fill="#66bb6a" font-family="Fira Code,monospace" font-size="9">QuerySet (paginated)</text>
+
+  <line x1="420" y1="265" x2="240" y2="265" stroke="#ab7df6" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr6)"/>
+  <text x="330" y="258" text-anchor="middle" fill="#ab7df6" font-family="Fira Code,monospace" font-size="9">{results, count, next, prev}</text>
+
+  <line x1="240" y1="295" x2="80" y2="295" stroke="#4fc3f7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr6)"/>
+  <text x="160" y="288" text-anchor="middle" fill="#4fc3f7" font-family="Fira Code,monospace" font-size="9">200 OK + paginated JSON</text>
+
+  <text x="350" y="335" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="9">Filtres: ?status=NEW&amp;priority=HIGH&amp;search=login&amp;assigned_to=me&amp;page=2</text>
+</svg>
+</div>
+
+<h3>3.7 — Assigner un ticket (US-07)</h3>
+<p class="seq-desc">Un agent ou admin assigne un ticket à un agent de l'organisation. Le service vérifie que l'agent cible est bien membre de l'orga avec le rôle AGENT ou ADMIN.</p>
+<div class="uml-diagram">
+<div class="uml-title">Séquence — Assignation d'un ticket à un agent</div>
+<svg viewBox="0 0 750 390" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:750px">
+  <defs>
+    <marker id="arr7" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#d4dce8"/>
+    </marker>
+  </defs>
+
+  <rect x="40" y="20" width="80" height="30" rx="4" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="80" y="40" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="11" font-weight="600">Agent</text>
+  <line x1="80" y1="50" x2="80" y2="370" stroke="#4fc3f7" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="195" y="20" width="90" height="30" rx="4" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="240" y="40" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="11" font-weight="600">API View</text>
+  <line x1="240" y1="50" x2="240" y2="370" stroke="#4fc3f7" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="370" y="20" width="100" height="30" rx="4" fill="rgba(171,125,246,.12)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="420" y="40" text-anchor="middle" fill="#ab7df6" font-family="Inter,sans-serif" font-size="11" font-weight="600">TicketService</text>
+  <line x1="420" y1="50" x2="420" y2="370" stroke="#ab7df6" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="555" y="20" width="80" height="30" rx="4" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="595" y="40" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="11" font-weight="600">DB (ORM)</text>
+  <line x1="595" y1="50" x2="595" y2="370" stroke="#66bb6a" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <line x1="80" y1="85" x2="240" y2="85" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr7)"/>
+  <text x="160" y="78" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">PATCH /tickets/{id}/assign/</text>
+
+  <rect x="220" y="95" width="40" height="25" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="155" y="112" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="9">Validate JWT + AGENT/ADMIN role</text>
+
+  <line x1="240" y1="135" x2="420" y2="135" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr7)"/>
+  <text x="330" y="128" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">assign_ticket(ticket, agent_id, user)</text>
+
+  <line x1="420" y1="165" x2="595" y2="165" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr7)"/>
+  <text x="507" y="158" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">Membership.filter(user, org, role__in)</text>
+
+  <line x1="595" y1="185" x2="420" y2="185" stroke="#66bb6a" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr7)"/>
+  <text x="507" y="200" text-anchor="middle" fill="#66bb6a" font-family="Fira Code,monospace" font-size="9">membership (valid agent)</text>
+
+  <line x1="420" y1="220" x2="595" y2="220" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr7)"/>
+  <text x="507" y="213" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">ticket.assigned_to = agent; save()</text>
+
+  <line x1="420" y1="250" x2="595" y2="250" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr7)"/>
+  <text x="507" y="243" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">TicketHistory.create(assigned_to)</text>
+
+  <line x1="420" y1="290" x2="240" y2="290" stroke="#ab7df6" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr7)"/>
+  <text x="330" y="283" text-anchor="middle" fill="#ab7df6" font-family="Fira Code,monospace" font-size="9">updated ticket</text>
+
+  <line x1="240" y1="320" x2="80" y2="320" stroke="#4fc3f7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr7)"/>
+  <text x="160" y="313" text-anchor="middle" fill="#4fc3f7" font-family="Fira Code,monospace" font-size="9">200 OK + ticket JSON</text>
+
+  <text x="375" y="360" text-anchor="middle" fill="#ef5350" font-family="Inter,sans-serif" font-size="9">[agent non membre de l'orga → 400 Bad Request]</text>
+</svg>
+</div>
+
+<h3>3.8 — Ajouter un commentaire (US-08)</h3>
+<p class="seq-desc">Un utilisateur ajoute un commentaire à un ticket. Le flag <code>is_internal</code> est réservé aux agents/admins. Les clients ne voient pas les notes internes.</p>
+<div class="uml-diagram">
+<div class="uml-title">Séquence — Ajout d'un commentaire avec flag is_internal</div>
+<svg viewBox="0 0 820 420" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px">
+  <defs>
+    <marker id="arr8" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#d4dce8"/>
+    </marker>
+  </defs>
+
+  <rect x="40" y="20" width="80" height="30" rx="4" fill="rgba(255,167,38,.12)" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="80" y="40" text-anchor="middle" fill="#ffa726" font-family="Inter,sans-serif" font-size="11" font-weight="600">User</text>
+  <line x1="80" y1="50" x2="80" y2="400" stroke="#ffa726" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="195" y="20" width="90" height="30" rx="4" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="240" y="40" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="11" font-weight="600">API View</text>
+  <line x1="240" y1="50" x2="240" y2="400" stroke="#4fc3f7" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="370" y="20" width="120" height="30" rx="4" fill="rgba(171,125,246,.12)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="430" y="40" text-anchor="middle" fill="#ab7df6" font-family="Inter,sans-serif" font-size="11" font-weight="600">CommentService</text>
+  <line x1="430" y1="50" x2="430" y2="400" stroke="#ab7df6" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="560" y="20" width="80" height="30" rx="4" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="600" y="40" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="11" font-weight="600">DB (ORM)</text>
+  <line x1="600" y1="50" x2="600" y2="400" stroke="#66bb6a" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="700" y="20" width="80" height="30" rx="4" fill="rgba(107,122,141,.12)" stroke="#6b7a8d" stroke-width="1.5"/>
+  <text x="740" y="40" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="11" font-weight="600">Celery</text>
+  <line x1="740" y1="50" x2="740" y2="400" stroke="#6b7a8d" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <line x1="80" y1="85" x2="240" y2="85" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr8)"/>
+  <text x="160" y="78" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">POST /tickets/{id}/comments/</text>
+
+  <rect x="220" y="95" width="40" height="25" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="155" y="112" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="9">Validate JWT + ticket access</text>
+
+  <line x1="240" y1="135" x2="430" y2="135" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr8)"/>
+  <text x="335" y="128" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">add_comment(ticket, body, user, is_internal)</text>
+
+  <!-- Alt: is_internal check -->
+  <rect x="395" y="148" width="235" height="45" rx="3" fill="none" stroke="#ffa726" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="405" y="160" fill="#ffa726" font-family="Inter,sans-serif" font-size="8" font-weight="600">[is_internal=true]</text>
+  <rect x="410" y="165" width="40" height="20" fill="rgba(171,125,246,.08)" stroke="#ab7df6" stroke-width="1"/>
+  <text x="505" y="179" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">Check role is AGENT or ADMIN, else 403</text>
+
+  <line x1="430" y1="210" x2="600" y2="210" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr8)"/>
+  <text x="515" y="203" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">Comment.objects.create(...)</text>
+
+  <line x1="600" y1="230" x2="430" y2="230" stroke="#66bb6a" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr8)"/>
+  <text x="515" y="245" text-anchor="middle" fill="#66bb6a" font-family="Fira Code,monospace" font-size="9">comment</text>
+
+  <line x1="430" y1="265" x2="600" y2="265" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr8)"/>
+  <text x="515" y="258" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">TicketHistory.create(comment_added)</text>
+
+  <!-- Alt: notify -->
+  <rect x="395" y="280" width="375" height="45" rx="3" fill="none" stroke="#6b7a8d" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="405" y="292" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8" font-weight="600">[is_internal=false]</text>
+  <line x1="430" y1="305" x2="740" y2="305" stroke="#6b7a8d" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr8)"/>
+  <text x="585" y="298" text-anchor="middle" fill="#6b7a8d" font-family="Fira Code,monospace" font-size="9">notify_new_comment.delay(comment_id)</text>
+
+  <line x1="430" y1="345" x2="240" y2="345" stroke="#ab7df6" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr8)"/>
+  <text x="335" y="338" text-anchor="middle" fill="#ab7df6" font-family="Fira Code,monospace" font-size="9">comment</text>
+
+  <line x1="240" y1="370" x2="80" y2="370" stroke="#4fc3f7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr8)"/>
+  <text x="160" y="363" text-anchor="middle" fill="#4fc3f7" font-family="Fira Code,monospace" font-size="9">201 Created + comment JSON</text>
+</svg>
+</div>
+
+<h3>3.9 — Consulter l'historique d'un ticket (US-09)</h3>
+<p class="seq-desc">Un utilisateur consulte la timeline d'un ticket : changements de statut, assignations, commentaires. Les notes internes sont filtrées pour les clients.</p>
+<div class="uml-diagram">
+<div class="uml-title">Séquence — Consultation de l'historique / timeline</div>
+<svg viewBox="0 0 700 370" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:700px">
+  <defs>
+    <marker id="arr9" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#d4dce8"/>
+    </marker>
+  </defs>
+
+  <rect x="40" y="20" width="80" height="30" rx="4" fill="rgba(255,167,38,.12)" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="80" y="40" text-anchor="middle" fill="#ffa726" font-family="Inter,sans-serif" font-size="11" font-weight="600">User</text>
+  <line x1="80" y1="50" x2="80" y2="350" stroke="#ffa726" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="195" y="20" width="90" height="30" rx="4" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="240" y="40" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="11" font-weight="600">API View</text>
+  <line x1="240" y1="50" x2="240" y2="350" stroke="#4fc3f7" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="370" y="20" width="100" height="30" rx="4" fill="rgba(171,125,246,.12)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="420" y="40" text-anchor="middle" fill="#ab7df6" font-family="Inter,sans-serif" font-size="11" font-weight="600">TicketService</text>
+  <line x1="420" y1="50" x2="420" y2="350" stroke="#ab7df6" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <rect x="555" y="20" width="80" height="30" rx="4" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="595" y="40" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="11" font-weight="600">DB (ORM)</text>
+  <line x1="595" y1="50" x2="595" y2="350" stroke="#66bb6a" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <line x1="80" y1="85" x2="240" y2="85" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr9)"/>
+  <text x="160" y="78" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">GET /tickets/{id}/history/</text>
+
+  <rect x="220" y="95" width="40" height="25" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="155" y="112" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="9">Validate JWT + ticket access</text>
+
+  <line x1="240" y1="135" x2="420" y2="135" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr9)"/>
+  <text x="330" y="128" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">get_timeline(ticket, user_role)</text>
+
+  <line x1="420" y1="165" x2="595" y2="165" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr9)"/>
+  <text x="507" y="158" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">TicketHistory.filter(ticket=...)</text>
+
+  <line x1="595" y1="185" x2="420" y2="185" stroke="#66bb6a" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr9)"/>
+  <text x="507" y="200" text-anchor="middle" fill="#66bb6a" font-family="Fira Code,monospace" font-size="9">history entries</text>
+
+  <line x1="420" y1="215" x2="595" y2="215" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr9)"/>
+  <text x="507" y="208" text-anchor="middle" fill="#d4dce8" font-family="Fira Code,monospace" font-size="9">Comment.filter(ticket=...)</text>
+
+  <line x1="595" y1="235" x2="420" y2="235" stroke="#66bb6a" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr9)"/>
+  <text x="507" y="250" text-anchor="middle" fill="#66bb6a" font-family="Fira Code,monospace" font-size="9">comments</text>
+
+  <!-- Filter box -->
+  <rect x="395" y="258" width="40" height="25" fill="rgba(171,125,246,.08)" stroke="#ab7df6" stroke-width="1"/>
+  <text x="500" y="275" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">[role=CLIENT] exclude is_internal=true</text>
+
+  <line x1="420" y1="295" x2="240" y2="295" stroke="#ab7df6" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr9)"/>
+  <text x="330" y="288" text-anchor="middle" fill="#ab7df6" font-family="Fira Code,monospace" font-size="9">merged timeline (sorted by date)</text>
+
+  <line x1="240" y1="320" x2="80" y2="320" stroke="#4fc3f7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr9)"/>
+  <text x="160" y="313" text-anchor="middle" fill="#4fc3f7" font-family="Fira Code,monospace" font-size="9">200 OK + timeline JSON</text>
+</svg>
+</div>
+
+<h3>3.10 — Résumé des séquences</h3>
+<table>
+  <tr><th>Réf</th><th>Séquence</th><th>Acteurs</th><th>Étapes principales</th></tr>
+  <tr><td>US-01</td><td>S'inscrire</td><td>Visiteur → View → Service → DB</td><td>Validate → Create user → Hash password → Generate JWT pair → 201</td></tr>
+  <tr><td>US-02</td><td>Créer une organisation</td><td>User → View → Service → DB</td><td>Auth → Create org → Auto-create Membership ADMIN (atomic) → 201</td></tr>
+  <tr><td>US-03</td><td>Inviter un membre</td><td>Admin → View → Service → DB → Celery</td><td>Auth → Check ADMIN → Lookup user → Create membership ou send invitation email → 201</td></tr>
+  <tr><td>US-04</td><td>Créer un ticket</td><td>Client → View → Service → DB → Celery</td><td>Auth → Validate org membership → Generate number → Create → History → Notify agents → 201</td></tr>
+  <tr><td>US-05</td><td>Lister/filtrer les tickets</td><td>Agent → View → Service → DB</td><td>Auth → Parse filters → Build QuerySet → Paginate → 200</td></tr>
+  <tr><td>US-06</td><td>Changer le statut</td><td>Agent → View → Service → StateMachine → DB</td><td>Auth → Validate transition → Update status → History → 200</td></tr>
+  <tr><td>US-07</td><td>Assigner un ticket</td><td>Agent → View → Service → DB</td><td>Auth → Verify agent membership → Update assigned_to → History → 200</td></tr>
+  <tr><td>US-08</td><td>Ajouter un commentaire</td><td>User → View → Service → DB → Celery</td><td>Auth → Check is_internal permission → Create comment → History → Notify → 201</td></tr>
+  <tr><td>US-09</td><td>Voir l'historique</td><td>User → View → Service → DB</td><td>Auth → Fetch history + comments → Filter internals for clients → Merge timeline → 200</td></tr>
+</table>
+</section>
+
+<!-- ===== S4 : DIAGRAMME D'ÉTATS ===== -->
+<section id="uml-etats">
+<h2>4. Diagramme d'états — Cycle de vie d'un ticket</h2>
+
+<div class="uml-diagram">
+<div class="uml-title">Diagramme d'états-transitions — Statut du ticket</div>
+<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:800px">
+  <defs>
+    <marker id="arr3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#d4dce8"/>
+    </marker>
+    <marker id="arr3-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#ef5350"/>
+    </marker>
+  </defs>
+
+  <!-- Initial -->
+  <circle cx="80" cy="120" r="10" fill="#d4dce8"/>
+
+  <!-- States -->
+  <rect x="130" y="95" width="100" height="50" rx="20" fill="rgba(79,195,247,.15)" stroke="#4fc3f7" stroke-width="2"/>
+  <text x="180" y="125" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="13" font-weight="700">NEW</text>
+
+  <rect x="310" y="95" width="100" height="50" rx="20" fill="rgba(102,187,106,.15)" stroke="#66bb6a" stroke-width="2"/>
+  <text x="360" y="125" text-anchor="middle" fill="#66bb6a" font-family="Inter,sans-serif" font-size="13" font-weight="700">OPEN</text>
+
+  <rect x="310" y="250" width="110" height="50" rx="20" fill="rgba(255,167,38,.15)" stroke="#ffa726" stroke-width="2"/>
+  <text x="365" y="280" text-anchor="middle" fill="#ffa726" font-family="Inter,sans-serif" font-size="13" font-weight="700">PENDING</text>
+
+  <rect x="530" y="95" width="110" height="50" rx="20" fill="rgba(171,125,246,.15)" stroke="#ab7df6" stroke-width="2"/>
+  <text x="585" y="125" text-anchor="middle" fill="#ab7df6" font-family="Inter,sans-serif" font-size="13" font-weight="700">RESOLVED</text>
+
+  <rect x="530" y="280" width="100" height="50" rx="20" fill="rgba(107,122,141,.15)" stroke="#6b7a8d" stroke-width="2"/>
+  <text x="580" y="310" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="13" font-weight="700">CLOSED</text>
+
+  <!-- Final -->
+  <circle cx="720" cy="305" r="10" fill="none" stroke="#6b7a8d" stroke-width="2"/>
+  <circle cx="720" cy="305" r="6" fill="#6b7a8d"/>
+
+  <!-- Transitions -->
+  <line x1="90" y1="120" x2="128" y2="120" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr3)"/>
+  <text x="109" y="112" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">création</text>
+
+  <line x1="230" y1="120" x2="308" y2="120" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr3)"/>
+  <text x="269" y="112" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">prise en charge</text>
+
+  <line x1="360" y1="145" x2="365" y2="248" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr3)"/>
+  <text x="395" y="200" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">attente client</text>
+
+  <line x1="340" y1="250" x2="335" y2="147" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr3)"/>
+  <text x="300" y="200" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">réponse</text>
+
+  <line x1="410" y1="115" x2="528" y2="115" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr3)"/>
+  <text x="469" y="107" text-anchor="middle" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">résolu</text>
+
+  <line x1="420" y1="270" x2="530" y2="135" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr3)"/>
+  <text x="490" y="215" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">résolu sans réponse</text>
+
+  <line x1="585" y1="145" x2="580" y2="278" stroke="#d4dce8" stroke-width="1.5" marker-end="url(#arr3)"/>
+  <text x="610" y="215" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">confirmé / auto 7j</text>
+
+  <path d="M 530 130 Q 460 170 410 130" fill="none" stroke="#ef5350" stroke-width="1.5" marker-end="url(#arr3-red)"/>
+  <text x="470" y="160" text-anchor="middle" fill="#ef5350" font-family="Inter,sans-serif" font-size="8">réouverture (client)</text>
+
+  <path d="M 530 300 Q 400 380 350 300 Q 330 250 310 135" fill="none" stroke="#ef5350" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr3-red)"/>
+  <text x="370" y="360" fill="#ef5350" font-family="Inter,sans-serif" font-size="8">réouverture exceptionnelle (admin)</text>
+
+  <line x1="630" y1="305" x2="708" y2="305" stroke="#6b7a8d" stroke-width="1.5" marker-end="url(#arr3)"/>
+</svg>
+</div>
+
+<div class="box brain">
+  <span class="ic">🧠</span>
+  <div>
+    <b>Implémentation en Django</b>
+    La machine à états sera implémentée comme un dictionnaire <code>TRANSITIONS</code> dans le service layer, pas comme un champ model. Chaque clé est l'état source, la valeur est un set d'états cibles. La méthode <code>TicketService.transition()</code> vérifie la validité avant de persister. Les transitions en rouge (réouverture) ont des restrictions de rôle supplémentaires. Détail des transitions autorisées dans le <a href="ticketflow-cdc.html#workflow" style="color:var(--accent)">Cahier des Charges §6</a>.
+  </div>
+</div>
+</section>
+
+<!-- ===== S5 : DIAGRAMMES D'ACTIVITÉ ===== -->
+<section id="uml-activites">
+<h2>5. Diagrammes d'activité</h2>
+
+<p>Les diagrammes d'activité modélisent le flux de contrôle complet de chaque cas d'utilisation, avec les décisions, branches alternatives et sorties d'erreur.</p>
+
+<h3>5.1 — Inscription (US-01)</h3>
+<div class="uml-diagram">
+<div class="uml-title">Activité — Inscription d'un utilisateur</div>
+<svg viewBox="0 0 500 520" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:500px">
+  <!-- Start -->
+  <circle cx="250" cy="25" r="10" fill="#d4dce8"/>
+  <line x1="250" y1="35" x2="250" y2="55" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <!-- Action: Soumettre formulaire -->
+  <rect x="150" y="55" width="200" height="35" rx="16" fill="rgba(255,167,38,.12)" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="250" y="77" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Soumettre email + mot de passe</text>
+  <line x1="250" y1="90" x2="250" y2="115" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <!-- Decision: Email unique? -->
+  <polygon points="250,115 300,145 250,175 200,145" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="250" y="149" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="9">Email unique ?</text>
+
+  <!-- Branch NON -->
+  <line x1="300" y1="145" x2="400" y2="145" stroke="#ef5350" stroke-width="1.5"/>
+  <text x="340" y="138" fill="#ef5350" font-family="Inter,sans-serif" font-size="8">[non]</text>
+  <rect x="370" y="130" width="110" height="30" rx="14" fill="rgba(239,83,80,.12)" stroke="#ef5350" stroke-width="1.5"/>
+  <text x="425" y="149" text-anchor="middle" fill="#ef5350" font-family="Inter,sans-serif" font-size="9">400 Bad Request</text>
+  <!-- End error -->
+  <line x1="425" y1="160" x2="425" y2="180" stroke="#ef5350" stroke-width="1.5"/>
+  <circle cx="425" cy="190" r="8" fill="none" stroke="#ef5350" stroke-width="2"/>
+  <circle cx="425" cy="190" r="4" fill="#ef5350"/>
+
+  <!-- Branch OUI -->
+  <line x1="250" y1="175" x2="250" y2="200" stroke="#d4dce8" stroke-width="1.5"/>
+  <text x="230" y="192" fill="#66bb6a" font-family="Inter,sans-serif" font-size="8">[oui]</text>
+
+  <!-- Decision: MDP valide? -->
+  <polygon points="250,200 300,230 250,260 200,230" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="250" y="234" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="9">MDP valide ?</text>
+
+  <!-- Branch NON -->
+  <line x1="200" y1="230" x2="100" y2="230" stroke="#ef5350" stroke-width="1.5"/>
+  <text x="160" y="223" fill="#ef5350" font-family="Inter,sans-serif" font-size="8">[non]</text>
+  <rect x="20" y="215" width="110" height="30" rx="14" fill="rgba(239,83,80,.12)" stroke="#ef5350" stroke-width="1.5"/>
+  <text x="75" y="234" text-anchor="middle" fill="#ef5350" font-family="Inter,sans-serif" font-size="9">400 MDP faible</text>
+  <line x1="75" y1="245" x2="75" y2="265" stroke="#ef5350" stroke-width="1.5"/>
+  <circle cx="75" cy="275" r="8" fill="none" stroke="#ef5350" stroke-width="2"/>
+  <circle cx="75" cy="275" r="4" fill="#ef5350"/>
+
+  <!-- Branch OUI -->
+  <line x1="250" y1="260" x2="250" y2="290" stroke="#d4dce8" stroke-width="1.5"/>
+  <text x="230" y="280" fill="#66bb6a" font-family="Inter,sans-serif" font-size="8">[oui]</text>
+
+  <!-- Action: Hash + Create -->
+  <rect x="150" y="290" width="200" height="35" rx="16" fill="rgba(171,125,246,.12)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="250" y="312" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Hash MDP + créer User en DB</text>
+  <line x1="250" y1="325" x2="250" y2="355" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <!-- Action: Generate JWT -->
+  <rect x="150" y="355" width="200" height="35" rx="16" fill="rgba(171,125,246,.12)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="250" y="377" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Générer tokens JWT</text>
+  <line x1="250" y1="390" x2="250" y2="420" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <!-- Action: Return -->
+  <rect x="140" y="420" width="220" height="35" rx="16" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="250" y="442" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">201 {user, access, refresh}</text>
+  <line x1="250" y1="455" x2="250" y2="480" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <!-- End -->
+  <circle cx="250" cy="490" r="10" fill="none" stroke="#d4dce8" stroke-width="2"/>
+  <circle cx="250" cy="490" r="5" fill="#d4dce8"/>
+</svg>
+</div>
+
+<h3>5.2 — Créer une organisation (US-02)</h3>
+<div class="uml-diagram">
+<div class="uml-title">Activité — Création d'une organisation</div>
+<svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:500px">
+  <circle cx="250" cy="25" r="10" fill="#d4dce8"/>
+  <line x1="250" y1="35" x2="250" y2="55" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="150" y="55" width="200" height="35" rx="16" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="250" y="77" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Vérifier JWT valide</text>
+  <line x1="250" y1="90" x2="250" y2="115" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="140" y="115" width="220" height="35" rx="16" fill="rgba(255,167,38,.12)" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="250" y="137" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Soumettre nom + slug de l'orga</text>
+  <line x1="250" y1="150" x2="250" y2="180" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <polygon points="250,180 305,210 250,240 195,210" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="250" y="214" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="9">Slug unique ?</text>
+
+  <line x1="305" y1="210" x2="410" y2="210" stroke="#ef5350" stroke-width="1.5"/>
+  <text x="348" y="203" fill="#ef5350" font-family="Inter,sans-serif" font-size="8">[non]</text>
+  <rect x="380" y="195" width="100" height="30" rx="14" fill="rgba(239,83,80,.12)" stroke="#ef5350" stroke-width="1.5"/>
+  <text x="430" y="214" text-anchor="middle" fill="#ef5350" font-family="Inter,sans-serif" font-size="9">400 slug pris</text>
+  <line x1="430" y1="225" x2="430" y2="245" stroke="#ef5350" stroke-width="1.5"/>
+  <circle cx="430" cy="255" r="8" fill="none" stroke="#ef5350" stroke-width="2"/>
+  <circle cx="430" cy="255" r="4" fill="#ef5350"/>
+
+  <line x1="250" y1="240" x2="250" y2="270" stroke="#d4dce8" stroke-width="1.5"/>
+  <text x="230" y="260" fill="#66bb6a" font-family="Inter,sans-serif" font-size="8">[oui]</text>
+
+  <!-- Fork bar (atomic) -->
+  <rect x="170" y="270" width="160" height="4" rx="2" fill="#ab7df6"/>
+  <text x="350" y="276" fill="#ab7df6" font-family="Inter,sans-serif" font-size="8">@transaction.atomic</text>
+  <line x1="220" y1="274" x2="220" y2="300" stroke="#d4dce8" stroke-width="1.5"/>
+  <line x1="280" y1="274" x2="280" y2="300" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="130" y="300" width="180" height="35" rx="16" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="220" y="322" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Organization.create()</text>
+
+  <rect x="130" y="350" width="180" height="35" rx="16" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="220" y="372" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Membership.create(ADMIN)</text>
+
+  <line x1="220" y1="335" x2="220" y2="350" stroke="#d4dce8" stroke-width="1.5"/>
+  <line x1="220" y1="385" x2="250" y2="410" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <!-- Join bar -->
+  <rect x="170" y="410" width="160" height="4" rx="2" fill="#ab7df6"/>
+  <line x1="250" y1="414" x2="250" y2="440" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="150" y="440" width="200" height="30" rx="14" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="250" y="459" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">201 Created + org JSON</text>
+  <line x1="250" y1="470" x2="250" y2="485" stroke="#d4dce8" stroke-width="1.5"/>
+  <circle cx="250" cy="493" r="8" fill="none" stroke="#d4dce8" stroke-width="2"/>
+  <circle cx="250" cy="493" r="4" fill="#d4dce8"/>
+</svg>
+</div>
+
+<h3>5.3 — Inviter un membre (US-03)</h3>
+<div class="uml-diagram">
+<div class="uml-title">Activité — Invitation d'un membre par l'admin</div>
+<svg viewBox="0 0 520 560" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:520px">
+  <circle cx="260" cy="25" r="10" fill="#d4dce8"/>
+  <line x1="260" y1="35" x2="260" y2="55" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="160" y="55" width="200" height="35" rx="16" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="260" y="77" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Vérifier JWT + rôle ADMIN</text>
+  <line x1="260" y1="90" x2="260" y2="115" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <polygon points="260,115 315,145 260,175 205,145" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="260" y="149" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="9">Est ADMIN ?</text>
+
+  <line x1="315" y1="145" x2="420" y2="145" stroke="#ef5350" stroke-width="1.5"/>
+  <text x="358" y="138" fill="#ef5350" font-family="Inter,sans-serif" font-size="8">[non]</text>
+  <rect x="390" y="130" width="100" height="30" rx="14" fill="rgba(239,83,80,.12)" stroke="#ef5350" stroke-width="1.5"/>
+  <text x="440" y="149" text-anchor="middle" fill="#ef5350" font-family="Inter,sans-serif" font-size="9">403 Forbidden</text>
+  <line x1="440" y1="160" x2="440" y2="180" stroke="#ef5350" stroke-width="1.5"/>
+  <circle cx="440" cy="188" r="8" fill="none" stroke="#ef5350" stroke-width="2"/>
+  <circle cx="440" cy="188" r="4" fill="#ef5350"/>
+
+  <line x1="260" y1="175" x2="260" y2="200" stroke="#d4dce8" stroke-width="1.5"/>
+  <text x="240" y="192" fill="#66bb6a" font-family="Inter,sans-serif" font-size="8">[oui]</text>
+
+  <rect x="155" y="200" width="210" height="35" rx="16" fill="rgba(171,125,246,.12)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="260" y="222" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Rechercher user par email en DB</text>
+  <line x1="260" y1="235" x2="260" y2="260" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <polygon points="260,260 315,290 260,320 205,290" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="260" y="294" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="9">User existe ?</text>
+
+  <!-- Branche OUI: create membership -->
+  <line x1="205" y1="290" x2="100" y2="290" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="160" y="283" fill="#66bb6a" font-family="Inter,sans-serif" font-size="8">[oui]</text>
+  <rect x="15" y="310" width="180" height="35" rx="16" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="105" y="332" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Membership.create(role)</text>
+  <line x1="100" y1="290" x2="100" y2="310" stroke="#66bb6a" stroke-width="1.5"/>
+  <line x1="105" y1="345" x2="260" y2="430" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <!-- Branche NON: send email -->
+  <line x1="315" y1="290" x2="410" y2="290" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="355" y="283" fill="#ffa726" font-family="Inter,sans-serif" font-size="8">[non]</text>
+  <rect x="340" y="310" width="170" height="35" rx="16" fill="rgba(107,122,141,.12)" stroke="#6b7a8d" stroke-width="1.5"/>
+  <text x="425" y="332" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Celery: send email invite</text>
+  <line x1="410" y1="290" x2="410" y2="310" stroke="#6b7a8d" stroke-width="1.5"/>
+  <line x1="425" y1="345" x2="260" y2="430" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <!-- Merge -->
+  <rect x="150" y="440" width="220" height="35" rx="16" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="260" y="462" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">201 {membership | invitation}</text>
+  <line x1="260" y1="475" x2="260" y2="500" stroke="#d4dce8" stroke-width="1.5"/>
+  <circle cx="260" cy="510" r="10" fill="none" stroke="#d4dce8" stroke-width="2"/>
+  <circle cx="260" cy="510" r="5" fill="#d4dce8"/>
+</svg>
+</div>
+
+<h3>5.4 — Créer un ticket (US-04)</h3>
+<div class="uml-diagram">
+<div class="uml-title">Activité — Création d'un ticket par un client</div>
+<svg viewBox="0 0 500 600" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:500px">
+  <circle cx="250" cy="25" r="10" fill="#d4dce8"/>
+  <line x1="250" y1="35" x2="250" y2="55" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="150" y="55" width="200" height="35" rx="16" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="250" y="77" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Vérifier JWT + membership orga</text>
+  <line x1="250" y1="90" x2="250" y2="115" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="130" y="115" width="240" height="35" rx="16" fill="rgba(255,167,38,.12)" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="250" y="137" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Soumettre sujet, description, priorité</text>
+  <line x1="250" y1="150" x2="250" y2="175" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="140" y="175" width="220" height="35" rx="16" fill="rgba(171,125,246,.12)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="250" y="197" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Valider les données (Serializer)</text>
+  <line x1="250" y1="210" x2="250" y2="240" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="120" y="240" width="260" height="35" rx="16" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="250" y="262" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">next_ticket_number(org) → numéro séq.</text>
+  <line x1="250" y1="275" x2="250" y2="305" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="130" y="305" width="240" height="35" rx="16" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="250" y="327" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Ticket.create(status=NEW) en DB</text>
+  <line x1="250" y1="340" x2="250" y2="370" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="130" y="370" width="240" height="35" rx="16" fill="rgba(240,98,146,.12)" stroke="#f06292" stroke-width="1.5"/>
+  <text x="250" y="392" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">TicketHistory.create(field=status)</text>
+  <line x1="250" y1="405" x2="250" y2="435" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="120" y="435" width="260" height="35" rx="16" fill="rgba(107,122,141,.12)" stroke="#6b7a8d" stroke-width="1.5"/>
+  <text x="250" y="457" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Celery: notify_agents(ticket_id)</text>
+  <line x1="250" y1="470" x2="250" y2="500" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="150" y="500" width="200" height="30" rx="14" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="250" y="519" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">201 Created + ticket JSON</text>
+  <line x1="250" y1="530" x2="250" y2="555" stroke="#d4dce8" stroke-width="1.5"/>
+  <circle cx="250" cy="565" r="10" fill="none" stroke="#d4dce8" stroke-width="2"/>
+  <circle cx="250" cy="565" r="5" fill="#d4dce8"/>
+</svg>
+</div>
+
+<h3>5.5 — Lister / filtrer les tickets (US-05)</h3>
+<div class="uml-diagram">
+<div class="uml-title">Activité — Liste paginée et filtrée des tickets</div>
+<svg viewBox="0 0 520 530" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:520px">
+  <circle cx="260" cy="25" r="10" fill="#d4dce8"/>
+  <line x1="260" y1="35" x2="260" y2="55" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="160" y="55" width="200" height="35" rx="16" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="260" y="77" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Vérifier JWT + membership orga</text>
+  <line x1="260" y1="90" x2="260" y2="115" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="120" y="115" width="280" height="35" rx="16" fill="rgba(171,125,246,.12)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="260" y="137" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Parser query params (status, priority, search)</text>
+  <line x1="260" y1="150" x2="260" y2="175" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="130" y="175" width="260" height="35" rx="16" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="260" y="197" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Ticket.filter(org=org, is_deleted=False)</text>
+  <line x1="260" y1="210" x2="260" y2="235" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <!-- Decision: role? -->
+  <polygon points="260,235 320,265 260,295 200,265" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="260" y="269" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="9">Rôle ?</text>
+
+  <line x1="200" y1="265" x2="100" y2="265" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="158" y="258" fill="#ffa726" font-family="Inter,sans-serif" font-size="8">[CLIENT]</text>
+  <rect x="20" y="280" width="170" height="30" rx="14" fill="rgba(255,167,38,.12)" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="105" y="299" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="9">Filter created_by=user</text>
+  <line x1="100" y1="265" x2="100" y2="280" stroke="#ffa726" stroke-width="1.5"/>
+  <line x1="105" y1="310" x2="260" y2="345" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <line x1="320" y1="265" x2="420" y2="265" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="362" y="258" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="8">[AGENT/ADMIN]</text>
+  <rect x="340" y="280" width="170" height="30" rx="14" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="425" y="299" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="9">Tous les tickets de l'orga</text>
+  <line x1="420" y1="265" x2="420" y2="280" stroke="#4fc3f7" stroke-width="1.5"/>
+  <line x1="425" y1="310" x2="260" y2="345" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <!-- Merge et suite -->
+  <rect x="120" y="350" width="280" height="35" rx="16" fill="rgba(171,125,246,.12)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="260" y="372" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Appliquer filtres + tri + select_related</text>
+  <line x1="260" y1="385" x2="260" y2="410" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="150" y="410" width="220" height="35" rx="16" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="260" y="432" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Paginer (page, page_size)</text>
+  <line x1="260" y1="445" x2="260" y2="470" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="130" y="470" width="260" height="30" rx="14" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="260" y="489" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">200 {results, count, next, prev}</text>
+  <line x1="260" y1="500" x2="260" y2="520" stroke="#d4dce8" stroke-width="1.5"/>
+  <circle cx="260" cy="528" r="8" fill="none" stroke="#d4dce8" stroke-width="2"/>
+  <circle cx="260" cy="528" r="4" fill="#d4dce8"/>
+</svg>
+</div>
+
+<h3>5.6 — Changer le statut (US-06)</h3>
+<div class="uml-diagram">
+<div class="uml-title">Activité — Transition de statut d'un ticket</div>
+<svg viewBox="0 0 520 580" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:520px">
+  <circle cx="260" cy="25" r="10" fill="#d4dce8"/>
+  <line x1="260" y1="35" x2="260" y2="55" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="150" y="55" width="220" height="35" rx="16" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="260" y="77" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Vérifier JWT + rôle AGENT/ADMIN</text>
+  <line x1="260" y1="90" x2="260" y2="115" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="140" y="115" width="240" height="35" rx="16" fill="rgba(255,167,38,.12)" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="260" y="137" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Soumettre new_status pour le ticket</text>
+  <line x1="260" y1="150" x2="260" y2="180" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="110" y="180" width="300" height="35" rx="16" fill="rgba(239,83,80,.12)" stroke="#ef5350" stroke-width="1.5"/>
+  <text x="260" y="202" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">StateMachine.validate(current, target, role)</text>
+  <line x1="260" y1="215" x2="260" y2="245" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <polygon points="260,245 320,275 260,305 200,275" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="260" y="279" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="9">Transition valide ?</text>
+
+  <line x1="320" y1="275" x2="430" y2="275" stroke="#ef5350" stroke-width="1.5"/>
+  <text x="368" y="268" fill="#ef5350" font-family="Inter,sans-serif" font-size="8">[non]</text>
+  <rect x="400" y="260" width="100" height="30" rx="14" fill="rgba(239,83,80,.12)" stroke="#ef5350" stroke-width="1.5"/>
+  <text x="450" y="279" text-anchor="middle" fill="#ef5350" font-family="Inter,sans-serif" font-size="9">400 invalide</text>
+  <line x1="450" y1="290" x2="450" y2="310" stroke="#ef5350" stroke-width="1.5"/>
+  <circle cx="450" cy="318" r="8" fill="none" stroke="#ef5350" stroke-width="2"/>
+  <circle cx="450" cy="318" r="4" fill="#ef5350"/>
+
+  <line x1="260" y1="305" x2="260" y2="335" stroke="#d4dce8" stroke-width="1.5"/>
+  <text x="240" y="325" fill="#66bb6a" font-family="Inter,sans-serif" font-size="8">[oui]</text>
+
+  <rect x="140" y="335" width="240" height="35" rx="16" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="260" y="357" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">UPDATE ticket.status en DB</text>
+  <line x1="260" y1="370" x2="260" y2="400" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="120" y="400" width="280" height="35" rx="16" fill="rgba(240,98,146,.12)" stroke="#f06292" stroke-width="1.5"/>
+  <text x="260" y="422" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">TicketHistory.create(old→new status)</text>
+  <line x1="260" y1="435" x2="260" y2="465" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="140" y="465" width="240" height="35" rx="16" fill="rgba(107,122,141,.12)" stroke="#6b7a8d" stroke-width="1.5"/>
+  <text x="260" y="487" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Celery: notify_status_change()</text>
+  <line x1="260" y1="500" x2="260" y2="525" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="155" y="525" width="210" height="25" rx="12" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="260" y="542" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">200 OK + ticket JSON</text>
+  <line x1="260" y1="550" x2="260" y2="565" stroke="#d4dce8" stroke-width="1.5"/>
+  <circle cx="260" cy="573" r="8" fill="none" stroke="#d4dce8" stroke-width="2"/>
+  <circle cx="260" cy="573" r="4" fill="#d4dce8"/>
+</svg>
+</div>
+
+<h3>5.7 — Assigner un ticket (US-07)</h3>
+<div class="uml-diagram">
+<div class="uml-title">Activité — Assignation d'un ticket à un agent</div>
+<svg viewBox="0 0 520 540" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:520px">
+  <circle cx="260" cy="25" r="10" fill="#d4dce8"/>
+  <line x1="260" y1="35" x2="260" y2="55" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="140" y="55" width="240" height="35" rx="16" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="260" y="77" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Vérifier JWT + rôle AGENT/ADMIN</text>
+  <line x1="260" y1="90" x2="260" y2="115" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="130" y="115" width="260" height="35" rx="16" fill="rgba(255,167,38,.12)" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="260" y="137" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Soumettre agent_id pour le ticket</text>
+  <line x1="260" y1="150" x2="260" y2="180" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="100" y="180" width="320" height="35" rx="16" fill="rgba(171,125,246,.12)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="260" y="202" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Vérifier Membership(agent, org, AGENT|ADMIN)</text>
+  <line x1="260" y1="215" x2="260" y2="245" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <polygon points="260,245 320,275 260,305 200,275" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="260" y="279" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="9">Agent valide ?</text>
+
+  <line x1="320" y1="275" x2="430" y2="275" stroke="#ef5350" stroke-width="1.5"/>
+  <text x="368" y="268" fill="#ef5350" font-family="Inter,sans-serif" font-size="8">[non]</text>
+  <rect x="400" y="260" width="100" height="30" rx="14" fill="rgba(239,83,80,.12)" stroke="#ef5350" stroke-width="1.5"/>
+  <text x="450" y="279" text-anchor="middle" fill="#ef5350" font-family="Inter,sans-serif" font-size="9">400 invalide</text>
+  <line x1="450" y1="290" x2="450" y2="310" stroke="#ef5350" stroke-width="1.5"/>
+  <circle cx="450" cy="318" r="8" fill="none" stroke="#ef5350" stroke-width="2"/>
+  <circle cx="450" cy="318" r="4" fill="#ef5350"/>
+
+  <line x1="260" y1="305" x2="260" y2="335" stroke="#d4dce8" stroke-width="1.5"/>
+  <text x="240" y="325" fill="#66bb6a" font-family="Inter,sans-serif" font-size="8">[oui]</text>
+
+  <rect x="130" y="335" width="260" height="35" rx="16" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="260" y="357" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">ticket.assigned_to = agent; save()</text>
+  <line x1="260" y1="370" x2="260" y2="400" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="120" y="400" width="280" height="35" rx="16" fill="rgba(240,98,146,.12)" stroke="#f06292" stroke-width="1.5"/>
+  <text x="260" y="422" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">TicketHistory.create(assigned_to)</text>
+  <line x1="260" y1="435" x2="260" y2="460" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="155" y="460" width="210" height="25" rx="12" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="260" y="477" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">200 OK + ticket JSON</text>
+  <line x1="260" y1="485" x2="260" y2="505" stroke="#d4dce8" stroke-width="1.5"/>
+  <circle cx="260" cy="513" r="8" fill="none" stroke="#d4dce8" stroke-width="2"/>
+  <circle cx="260" cy="513" r="4" fill="#d4dce8"/>
+</svg>
+</div>
+
+<h3>5.8 — Ajouter un commentaire (US-08)</h3>
+<div class="uml-diagram">
+<div class="uml-title">Activité — Ajout d'un commentaire avec gestion is_internal</div>
+<svg viewBox="0 0 530 600" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:530px">
+  <circle cx="265" cy="25" r="10" fill="#d4dce8"/>
+  <line x1="265" y1="35" x2="265" y2="55" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="155" y="55" width="220" height="35" rx="16" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="265" y="77" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Vérifier JWT + accès au ticket</text>
+  <line x1="265" y1="90" x2="265" y2="115" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="130" y="115" width="270" height="35" rx="16" fill="rgba(255,167,38,.12)" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="265" y="137" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Soumettre body + is_internal flag</text>
+  <line x1="265" y1="150" x2="265" y2="180" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <polygon points="265,180 325,210 265,240 205,210" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="265" y="214" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="9">is_internal ?</text>
+
+  <line x1="325" y1="210" x2="430" y2="210" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="370" y="203" fill="#ffa726" font-family="Inter,sans-serif" font-size="8">[oui]</text>
+
+  <polygon points="430,230 470,250 430,270 390,250" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="430" y="254" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="8">AGENT ?</text>
+  <line x1="430" y1="210" x2="430" y2="230" stroke="#ffa726" stroke-width="1.5"/>
+
+  <line x1="470" y1="250" x2="510" y2="250" stroke="#ef5350" stroke-width="1.5"/>
+  <text x="488" y="243" fill="#ef5350" font-family="Inter,sans-serif" font-size="7">[non]</text>
+  <text x="510" y="262" fill="#ef5350" font-family="Inter,sans-serif" font-size="8">403</text>
+
+  <line x1="430" y1="270" x2="265" y2="310" stroke="#d4dce8" stroke-width="1.5"/>
+  <text x="420" y="286" fill="#66bb6a" font-family="Inter,sans-serif" font-size="7">[oui]</text>
+
+  <line x1="205" y1="210" x2="160" y2="210" stroke="#6b7a8d" stroke-width="1.5"/>
+  <text x="185" y="203" fill="#6b7a8d" font-family="Inter,sans-serif" font-size="8">[non]</text>
+  <line x1="160" y1="210" x2="160" y2="310" stroke="#d4dce8" stroke-width="1.5"/>
+  <line x1="160" y1="310" x2="265" y2="310" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <!-- Suite commune -->
+  <rect x="135" y="315" width="260" height="35" rx="16" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="265" y="337" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Comment.objects.create(...) en DB</text>
+  <line x1="265" y1="350" x2="265" y2="380" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="120" y="380" width="290" height="35" rx="16" fill="rgba(240,98,146,.12)" stroke="#f06292" stroke-width="1.5"/>
+  <text x="265" y="402" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">TicketHistory.create(comment_added)</text>
+  <line x1="265" y1="415" x2="265" y2="445" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <!-- Decision: notify? -->
+  <polygon points="265,445 315,470 265,495 215,470" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="265" y="474" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="8">!is_internal ?</text>
+
+  <line x1="315" y1="470" x2="430" y2="470" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="365" y="463" fill="#66bb6a" font-family="Inter,sans-serif" font-size="8">[oui]</text>
+  <rect x="370" y="485" width="140" height="30" rx="14" fill="rgba(107,122,141,.12)" stroke="#6b7a8d" stroke-width="1.5"/>
+  <text x="440" y="504" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="9">Celery: notify</text>
+  <line x1="430" y1="470" x2="430" y2="485" stroke="#6b7a8d" stroke-width="1.5"/>
+  <line x1="440" y1="515" x2="265" y2="545" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <line x1="265" y1="495" x2="265" y2="545" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="155" y="545" width="220" height="25" rx="12" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="265" y="562" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">201 Created + comment JSON</text>
+  <line x1="265" y1="570" x2="265" y2="585" stroke="#d4dce8" stroke-width="1.5"/>
+  <circle cx="265" cy="593" r="8" fill="none" stroke="#d4dce8" stroke-width="2"/>
+  <circle cx="265" cy="593" r="4" fill="#d4dce8"/>
+</svg>
+</div>
+
+<h3>5.9 — Consulter l'historique (US-09)</h3>
+<div class="uml-diagram">
+<div class="uml-title">Activité — Consultation de la timeline d'un ticket</div>
+<svg viewBox="0 0 520 520" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:520px">
+  <circle cx="260" cy="25" r="10" fill="#d4dce8"/>
+  <line x1="260" y1="35" x2="260" y2="55" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="155" y="55" width="210" height="35" rx="16" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="260" y="77" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Vérifier JWT + accès au ticket</text>
+  <line x1="260" y1="90" x2="260" y2="115" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="120" y="115" width="280" height="35" rx="16" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="260" y="137" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Fetch TicketHistory.filter(ticket=...)</text>
+  <line x1="260" y1="150" x2="260" y2="175" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="130" y="175" width="260" height="35" rx="16" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="260" y="197" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Fetch Comment.filter(ticket=...)</text>
+  <line x1="260" y1="210" x2="260" y2="240" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <!-- Decision: role? -->
+  <polygon points="260,240 320,270 260,300 200,270" fill="rgba(79,195,247,.08)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="260" y="274" text-anchor="middle" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="9">Rôle = CLIENT ?</text>
+
+  <line x1="320" y1="270" x2="430" y2="270" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="370" y="263" fill="#ffa726" font-family="Inter,sans-serif" font-size="8">[oui]</text>
+  <rect x="370" y="285" width="140" height="30" rx="14" fill="rgba(255,167,38,.12)" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="440" y="304" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="9">Exclure is_internal</text>
+  <line x1="430" y1="270" x2="430" y2="285" stroke="#ffa726" stroke-width="1.5"/>
+  <line x1="440" y1="315" x2="260" y2="355" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <line x1="200" y1="270" x2="100" y2="270" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="155" y="263" fill="#4fc3f7" font-family="Inter,sans-serif" font-size="8">[non]</text>
+  <rect x="30" y="285" width="150" height="30" rx="14" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="105" y="304" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="9">Garder tout (internes)</text>
+  <line x1="100" y1="270" x2="100" y2="285" stroke="#4fc3f7" stroke-width="1.5"/>
+  <line x1="105" y1="315" x2="260" y2="355" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <!-- Merge et suite -->
+  <rect x="100" y="360" width="320" height="35" rx="16" fill="rgba(171,125,246,.12)" stroke="#ab7df6" stroke-width="1.5"/>
+  <text x="260" y="382" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">Merge history + comments, tri par created_at</text>
+  <line x1="260" y1="395" x2="260" y2="425" stroke="#d4dce8" stroke-width="1.5"/>
+
+  <rect x="140" y="425" width="240" height="30" rx="14" fill="rgba(102,187,106,.12)" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="260" y="444" text-anchor="middle" fill="#d4dce8" font-family="Inter,sans-serif" font-size="10">200 OK + timeline JSON</text>
+  <line x1="260" y1="455" x2="260" y2="480" stroke="#d4dce8" stroke-width="1.5"/>
+  <circle cx="260" cy="490" r="10" fill="none" stroke="#d4dce8" stroke-width="2"/>
+  <circle cx="260" cy="490" r="5" fill="#d4dce8"/>
+</svg>
+</div>
+
+<div class="box brain">
+  <span class="ic">🧠</span>
+  <div>
+    <b>Légende des diagrammes d'activité</b>
+    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#d4dce8;margin-right:4px"></span> Nœud initial —
+    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;border:2px solid #d4dce8;margin-right:4px"></span> Nœud final —
+    Les rectangles arrondis sont des actions, les losanges des décisions. Les branches <span style="color:#66bb6a">[oui]</span> et <span style="color:#ef5350">[non]</span> montrent les chemins alternatifs. Les barres horizontales <span style="color:#ab7df6">violettes</span> marquent un fork/join (exécution atomique).
+  </div>
+</div>
+</section>
+
+</div><!-- /main -->
+
+<script>
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('#sidebar nav a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if(window.scrollY >= s.offsetTop - 100) current = s.id;
+  });
+  navLinks.forEach(a => {
+    a.classList.remove('active');
+    if(a.getAttribute('href') === '#' + current) a.classList.add('active');
+  });
+});
+</script>
+
+</body>
+</html>
